@@ -1,0 +1,472 @@
+:root {
+    --bg: #f4f0e8;
+    --surface: #fffdfa;
+    --surface-strong: #f9f4eb;
+    --border: #d6dee6;
+    --text: #607283;
+    --text-h: #102030;
+    --accent: #27445d;
+    --accent-soft: #e7eef4;
+    --sans: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --heading: Georgia, 'Times New Roman', 'Songti SC', serif;
+    --mono: ui-monospace, Consolas, monospace;
+    font: 16px/1.6 var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+    min-height: 100svh;
+}
+
+body {
+    margin: 0;
+    background: radial-gradient(circle at top left, rgba(39, 68, 93, 0.08), transparent 28%),
+    linear-gradient(180deg, #f7f2ea 0%, #f1ede4 100%);
+}
+
+::selection {
+    background: rgba(39, 68, 93, 0.16);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    font-family: var(--heading);
+    color: var(--text-h);
+}
+
+a {
+    color: inherit;
+}
+
+.app-shell {
+    min-height: 100svh;
+    height: 100svh;
+    max-height: 100svh;
+    background: transparent;
+    overflow: hidden;
+}
+
+.app-sider.ant-layout-sider {
+    background: rgba(255, 253, 250, 0.88);
+    border-right: 1px solid rgba(214, 222, 230, 0.9);
+    backdrop-filter: blur(14px);
+    max-height: 100svh;
+    overflow: auto;
+}
+
+.brand-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 20px 16px;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+}
+
+.brand-title.ant-typography {
+    margin: 2px 0 0;
+    margin-top: 0 !important;
+}
+
+.app-menu {
+    background: transparent;
+    border-inline-end: none !important;
+    padding: 0 12px;
+}
+
+.app-menu .ant-menu-item {
+    height: 44px;
+    border-radius: 12px;
+}
+
+.app-menu .ant-menu-item-selected {
+    background: var(--accent-soft) !important;
+    color: var(--accent) !important;
+}
+
+.user-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.user-summary .ant-typography {
+    display: block;
+}
+
+.app-main {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 100svh;
+    background: transparent;
+}
+
+.app-header {
+    height: auto;
+    /*padding: 24px 28px;*/
+    line-height: 1.4;
+    background: transparent;
+    border-bottom: 1px solid rgba(214, 222, 230, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.header-copy {
+    max-width: 620px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.user-panel {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: min(100%, 540px);
+    padding: 12px 14px;
+    border-radius: 18px;
+    /*background:*/
+    /*  linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(249, 244, 235, 0.92));*/
+    /*box-shadow: 0 12px 28px rgba(16, 32, 48, 0.06);*/
+}
+
+.user-avatar.ant-avatar {
+    flex: none;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-weight: 700;
+}
+
+.user-meta {
+    min-width: 0;
+    flex: 1;
+}
+
+.user-meta-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.user-name.ant-typography {
+    color: var(--text-h);
+}
+
+.user-role-tag.ant-tag {
+    margin-inline-end: 0;
+    border-radius: 999px;
+    font-size: 12px;
+    padding-inline: 10px;
+}
+
+.user-meta-line {
+    display: block;
+}
+
+.user-meta-subline {
+    font-size: 13px;
+    opacity: 0.82;
+}
+
+.logout-button {
+    flex: none;
+    border-color: rgba(39, 68, 93, 0.2);
+}
+
+.header-title.ant-typography {
+    margin-bottom: 4px;
+}
+
+.app-content {
+    flex: 1;
+    min-height: 0;
+    padding: 28px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.content-wrap {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    max-width: 1380px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.page-stack,
+.detail-stack,
+.remark-list,
+.compact-stack {
+    display: grid;
+    gap: 16px;
+}
+
+.page-fill {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.page-table-layout>.page-header,
+.page-table-layout>.ant-row {
+    flex: none;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.page-title.ant-typography {
+    margin: 6px 0 8px;
+    margin-top: 0 !important;
+}
+
+.section-eyebrow {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 11px;
+}
+
+.muted-text {
+    color: var(--text);
+}
+
+.muted-paragraph.ant-typography {
+    color: var(--text);
+    margin-bottom: 0;
+}
+
+.muted-paragraph.compact {
+    margin-top: 4px;
+}
+
+.panel-card.ant-card {
+    border: 1px solid rgba(214, 222, 230, 0.9);
+    background: rgba(255, 253, 250, 0.92);
+    box-shadow: 0 18px 40px rgba(16, 32, 48, 0.06);
+}
+
+.metric-card .ant-typography {
+    margin-bottom: 0;
+}
+
+.task-metrics-row {
+    margin-bottom: 4px;
+}
+
+.task-metric-card.ant-card .ant-card-body {
+    padding: 14px 16px;
+}
+
+.task-metric-card .muted-text {
+    font-size: 13px;
+}
+
+.task-metric-card .ant-typography+h1.ant-typography,
+.task-metric-card .ant-typography+h2.ant-typography,
+.task-metric-card .ant-typography+h3.ant-typography,
+.task-metric-card .ant-typography+h4.ant-typography,
+.task-metric-card .ant-typography+h5.ant-typography {
+    margin-top: 6px;
+}
+
+.task-metric-card h3.ant-typography {
+    margin-bottom: 0;
+    font-size: 26px;
+    line-height: 1.15;
+}
+
+.page-table-card.ant-card {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.page-table-card.ant-card .ant-card-body {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-scroll-host {
+    flex: 1;
+    min-height: 0;
+}
+
+.table-scroll-host .ant-table-wrapper,
+.table-scroll-host .ant-spin-nested-loading,
+.table-scroll-host .ant-spin-container {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-scroll-host .ant-table {
+    flex: 1;
+    min-height: 0;
+}
+
+.table-scroll-host .ant-table-container {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-scroll-host .ant-table-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto !important;
+}
+
+.app-content .login-screen {
+    min-height: 100%;
+}
+
+.upload-field {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+}
+
+.upload-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.upload-result {
+    display: grid;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.login-screen {
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.login-wrap {
+    width: min(1080px, 100%);
+    display: grid;
+    grid-template-columns: 1.2fr 0.9fr;
+    gap: 24px;
+    align-items: center;
+}
+
+.login-copy {
+    padding: 24px 8px;
+}
+
+.login-title.ant-typography {
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 1.02;
+    margin: 10px 0 16px;
+}
+
+.login-card.ant-card {
+    width: 100%;
+}
+
+@media (max-width: 960px) {
+    .login-wrap {
+        grid-template-columns: 1fr;
+    }
+
+    .page-header {
+        flex-direction: column;
+    }
+
+    .app-header {
+        padding: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .user-panel {
+        width: 100%;
+        min-width: 0;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .logout-button {
+        width: 100%;
+    }
+
+    .task-metric-card.ant-card .ant-card-body {
+        padding: 12px 14px;
+    }
+
+    .task-metric-card h3.ant-typography {
+        font-size: 24px;
+    }
+
+    .app-content {
+        padding: 20px;
+    }
+
+    .page-fill {
+        gap: 14px;
+    }
+
+    .upload-field {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

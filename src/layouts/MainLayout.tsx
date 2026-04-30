@@ -1,0 +1,181 @@
+import {
+  Avatar,
+  Button,
+  Layout,
+  Menu,
+  Tag,
+  Typography,
+  type MenuProps,
+} from 'antd'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import type { UserRole } from '../types/models'
+
+const roleLabels = {
+  admin: '管理员',
+  cleaner: '数据清洗者',
+  annotator: '数据标注者',
+  trainer: '模型训练者',
+} as const
+
+const roleTagColors: Record<UserRole, string> = {
+  admin: 'gold',
+  cleaner: 'cyan',
+  annotator: 'geekblue',
+  trainer: 'purple',
+}
+
+function formatCreatedAt(createdAt: string) {
+  const date = new Date(createdAt)
+
+  if (Number.isNaN(date.getTime())) {
+    return '未知'
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+function getUserHint(role: UserRole) {
+  if (role === 'admin') {
+    return '当前账号可管理用户、查看任务流并维护整体流程。'
+  }
+
+  return '当前账号可继续处理自己所负责阶段的任务交接。'
+}
+
+function getMenuItems(isAdmin: boolean): MenuProps['items'] {
+  return [
+    {
+      key: '/tasks',
+      label: '任务工作台',
+    },
+    ...(isAdmin
+      ? [
+          {
+            key: '/users',
+            label: '用户管理',
+          },
+        ]
+      : []),
+  ]
+}
+
+function getSelectedMenuKeys(pathname: string, items: MenuProps['items']) {
+  const selectedItem = items?.find((item) => {
+    if (!item || typeof item !== 'object' || !('key' in item)) {
+      return false
+    }
+
+    const key = String(item.key)
+
+    return pathname === key || pathname.startsWith(`${key}/`)
+  })
+
+  return selectedItem && 'key' in selectedItem ? [String(selectedItem.key)] : []
+}
+
+function MainLayout() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { logout, session } = useAuth()
+
+  if (!session) {
+    return null
+  }
+
+  const menuItems = getMenuItems(session.user.role === 'admin')
+  const userInitial = session.user.username.slice(0, 1).toUpperCase()
+
+  return (
+    <Layout className="app-shell">
+      <Layout.Sider
+        breakpoint="lg"
+        collapsedWidth="0"
+        width={248}
+        theme="light"
+        className="app-sider"
+      >
+        <div className="brand-block">
+          <span className="brand-mark">IR</span>
+          <div>
+            <Typography.Text className="section-eyebrow">
+              Image Relay
+            </Typography.Text>
+            <Typography.Title level={4} className="brand-title">
+              任务流转台
+            </Typography.Title>
+          </div>
+        </div>
+
+        <Menu
+          mode="inline"
+          selectedKeys={getSelectedMenuKeys(location.pathname, menuItems)}
+          items={menuItems}
+          className="app-menu"
+          onClick={({ key }) => {
+            navigate(String(key))
+          }}
+        />
+      </Layout.Sider>
+
+      <Layout className="app-main">
+        <Layout.Header className="app-header">
+          <div className="header-copy">
+            {/*<Typography.Title level={2} className="page-title header-title">*/}
+            {/*  资源中转管理器*/}
+            {/*</Typography.Title>*/}
+            <Typography.Text className="muted-text">
+              固定角色、固定阶段、固定任务交接链路
+            </Typography.Text>
+          </div>
+
+          <div className="header-actions">
+            <div className="user-panel">
+              <Avatar size={44} className="user-avatar">
+                {userInitial}
+              </Avatar>
+
+              <div className="user-meta">
+                <div className="user-meta-top">
+                  <Typography.Text strong className="user-name">
+                    {session.user.username}
+                  </Typography.Text>
+                  <Tag
+                    bordered={false}
+                    color={roleTagColors[session.user.role]}
+                    className="user-role-tag"
+                  >
+                    {roleLabels[session.user.role]}
+                  </Tag>
+                </div>
+
+                <Typography.Text className="muted-text user-meta-line">
+                  {getUserHint(session.user.role)}
+                </Typography.Text>
+                <Typography.Text className="muted-text user-meta-line user-meta-subline">
+                  账号创建于 {formatCreatedAt(session.user.createdAt)}
+                </Typography.Text>
+              </div>
+
+              <Button onClick={logout} className="logout-button">
+                退出登录
+              </Button>
+            </div>
+          </div>
+        </Layout.Header>
+
+        <Layout.Content className="app-content">
+          <div className="content-wrap">
+            <Outlet />
+          </div>
+        </Layout.Content>
+      </Layout>
+    </Layout>
+  )
+}
+
+export default MainLayout

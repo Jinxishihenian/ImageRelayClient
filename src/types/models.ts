@@ -1,0 +1,76 @@
+export type UserRole = 'admin' | 'cleaner' | 'annotator' | 'trainer'
+export type TaskStatus =
+  | 'pending_clean'
+  | 'pending_annotate'
+  | 'pending_train'
+  | 'finished'
+
+export type AuthUser = {
+  id: number
+  username: string
+  role: UserRole
+  createdAt: string
+}
+
+export type AuthSession = {
+  token: string
+  user: AuthUser
+}
+
+export type UserSummary = {
+  id: number
+  username: string
+  role: UserRole
+  createdAt: string
+}
+
+export type TaskAssignee = {
+  id: number
+  username: string
+}
+
+export type TaskSummary = {
+  id: number
+  title: string
+  description: string
+  status: TaskStatus
+  statusLabel: string
+  createdAt: string
+  finishedAt: string | null
+  creator: TaskAssignee
+  assignees: {
+    cleaner: TaskAssignee
+    annotator: TaskAssignee
+    trainer: TaskAssignee
+  }
+  myRole: UserRole
+  canHandle: boolean
+}
+
+export type TaskDownload = {
+  alias: 'source' | 'cleaned' | 'annotated' | 'model'
+  label: string
+  fileName: string
+  endpoint: string
+}
+
+export type TaskDetail = TaskSummary & {
+  remarks: {
+    cleaner: string | null
+    annotator: string | null
+    trainer: string | null
+  }
+  downloads: TaskDownload[]
+  canSubmitCurrentStage: boolean
+  currentStage: {
+    role: UserRole | null
+    label: string
+  }
+}
+
+export type UploadedFileRef = {
+  storageKey: string
+  originalName: string
+  mimeType: string
+  size: number
+}
