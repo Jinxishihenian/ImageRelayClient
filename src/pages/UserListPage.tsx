@@ -19,7 +19,7 @@ import { useCallback, useEffect, useState, useTransition } from 'react'
 import { createUser, deleteUser, getUsers, updateUser } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
-import type { UserRole, UserSummary } from '../types/models'
+import type { UserListSummary, UserRole, UserSummary } from '../types/models'
 
 type CreateUserFormValues = {
   username: string
@@ -32,11 +32,13 @@ type EditUserFormValues = {
   password?: string
 }
 
+const PAGE_SIZE = 10
+
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string; color: string }> = [
   { value: 'admin', label: '管理员', color: '#FFF7E8' },
-  { value: 'cleaner', label: '数据清洗者', color: '#E6F4FF' },
-  { value: 'annotator', label: '数据标注者', color: '#F3E8FF' },
-  { value: 'trainer', label: '模型训练者', color: '#FFF1F0' },
+  { value: 'cleaner', label: '数据清洗员', color: '#E6F4FF' },
+  { value: 'annotator', label: '数据标注员', color: '#F3E8FF' },
+  { value: 'trainer', label: '模型训练员', color: '#FFF1F0' },
 ]
 
 const ROLE_LABELS = ROLE_OPTIONS.reduce(
@@ -62,6 +64,12 @@ const ROLE_TEXT_COLORS: Record<UserRole, string> = {
   trainer: '#F53F3F',
 }
 
+const EMPTY_USER_SUMMARY: UserListSummary = {
+  total: 0,
+  adminCount: 0,
+  workerCount: 0,
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', {
     hour12: false,
@@ -74,41 +82,53 @@ function UserListPage() {
   const [createForm] = Form.useForm<CreateUserFormValues>()
   const [editForm] = Form.useForm<EditUserFormValues>()
   const [users, setUsers] = useState<UserSummary[]>([])
+  const [summary, setSummary] = useState<UserListSummary>(EMPTY_USER_SUMMARY)
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserSummary | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
   const [, startTransition] = useTransition()
+  const currentUserId = session?.user.id ?? -1
 
-  const loadUsers = useCallback(async (options?: { silent?: boolean }) => {
-    if (!session || session.user.role !== 'admin') {
-      return
-    }
-
-    if (!options?.silent) {
-      setLoading(true)
-    }
-
-    try {
-      const items = await getUsers(session.token)
-      startTransition(() => {
-        setUsers(items)
-      })
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '用户列表加载失败')
-    } finally {
-      if (!options?.silent) {
-        setLoading(false)
+  const loadUsers = useCallback(
+    async (page: number, options?: { silent?: boolean }) => {
+      if (!session || session.user.role !== 'admin') {
+        return
       }
-    }
-  }, [session, startTransition])
+
+      if (!options?.silent) {
+        setLoading(true)
+      }
+
+      try {
+        const response = await getUsers(session.token, {
+          page,
+          pageSize: PAGE_SIZE,
+        })
+
+        startTransition(() => {
+          setUsers(response.items)
+          setSummary(response.summary)
+          setCurrentPage(response.pagination.page)
+        })
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '用户列表加载失败')
+      } finally {
+        if (!options?.silent) {
+          setLoading(false)
+        }
+      }
+    },
+    [session, startTransition],
+  )
 
   useEffect(() => {
     queueMicrotask(() => {
-      void loadUsers()
+      void loadUsers(currentPage)
     })
-  }, [loadUsers])
+  }, [currentPage, loadUsers])
 
   useEffect(() => {
     if (!createOpen) {
@@ -122,7 +142,7 @@ function UserListPage() {
       return
     }
 
-    // 编辑用户时明确不回填密码，避免把旧密码误暴露到界面上。
+    // 编辑用户时不回填旧密码，避免把旧值误暴露到界面上。
     editForm.setFieldsValue({
       username: editingUser.username,
       password: '',
@@ -196,7 +216,16 @@ function UserListPage() {
                 try {
                   await deleteUser(record.id, session.token)
                   message.success('用户已删除')
-                  await loadUsers({ silent: true })
+                  const expectedTotal = Math.max(summary.total - 1, 0)
+                  const lastPage =
+                    expectedTotal === 0 ? 1 : Math.ceil(expectedTotal / PAGE_SIZE)
+                  const nextPage = Math.min(currentPage, lastPage)
+
+                  if (nextPage !== currentPage) {
+                    setCurrentPage(nextPage)
+                  } else {
+                    await loadUsers(nextPage, { silent: true })
+                  }
                 } catch (error) {
                   message.error(error instanceof Error ? error.message : '删除用户失败')
                 } finally {
@@ -207,8 +236,8 @@ function UserListPage() {
           >
             <Button
               danger
-              disabled={session?.user.id === record.id}
-              title={session?.user.id === record.id ? '不能删除当前登录账号' : undefined}
+              disabled={currentUserId === record.id}
+              title={currentUserId === record.id ? '不能删除当前登录账号' : undefined}
             >
               删除
             </Button>
@@ -221,17 +250,17 @@ function UserListPage() {
   const metrics = [
     {
       label: '用户总数',
-      value: users.length,
+      value: summary.total,
       caption: '系统内全部可登录账号',
     },
     {
       label: '管理员',
-      value: users.filter((user) => user.role === 'admin').length,
+      value: summary.adminCount,
       caption: '具备用户和任务全局管理权限',
     },
     {
       label: '执行角色用户',
-      value: users.filter((user) => user.role !== 'admin').length,
+      value: summary.workerCount,
       caption: '承担清洗、标注、训练三类执行职责',
     },
   ]
@@ -271,7 +300,6 @@ function UserListPage() {
       <Row gutter={[16, 12]} className="task-metrics-row">
         {metrics.map((metric) => (
           <Col xs={24} md={8} key={metric.label}>
-            {/* 与任务工作台统计卡片复用同一套紧凑样式，避免用户页卡片显得过高。 */}
             <Card className="panel-card metric-card task-metric-card">
               <Typography.Text className="muted-text">{metric.label}</Typography.Text>
               <Typography.Title level={3}>{metric.value}</Typography.Title>
@@ -284,14 +312,6 @@ function UserListPage() {
       </Row>
 
       <Card className="panel-card page-table-card">
-        <div className="table-card-toolbar">
-          <div className="toolbar-copy">
-            <Typography.Title level={5}>账号列表</Typography.Title>
-            <Typography.Text className="muted-text">
-              维护登录账号、固定角色以及创建时间信息。
-            </Typography.Text>
-          </div>
-        </div>
         <div ref={tableContainerRef} className="table-scroll-host">
           <Table<UserSummary>
             rowKey="id"
@@ -299,7 +319,18 @@ function UserListPage() {
             columns={columns}
             dataSource={users}
             scroll={scrollY ? { y: scrollY } : undefined}
-            pagination={{ pageSize: 10, hideOnSinglePage: true }}
+            pagination={{
+              current: currentPage,
+              pageSize: PAGE_SIZE,
+              total: summary.total,
+              hideOnSinglePage: true,
+              showSizeChanger: false,
+              onChange: (page) => {
+                if (page !== currentPage) {
+                  setCurrentPage(page)
+                }
+              },
+            }}
             locale={{
               emptyText: '当前暂无用户',
             }}
@@ -335,7 +366,7 @@ function UserListPage() {
               await createUser(values, session.token)
               message.success('用户创建成功')
               setCreateOpen(false)
-              await loadUsers({ silent: true })
+              await loadUsers(currentPage, { silent: true })
             } catch (error) {
               message.error(error instanceof Error ? error.message : '创建用户失败')
             } finally {
@@ -411,7 +442,7 @@ function UserListPage() {
               )
               message.success('用户更新成功')
               setEditingUser(null)
-              await loadUsers({ silent: true })
+              await loadUsers(currentPage, { silent: true })
             } catch (error) {
               message.error(error instanceof Error ? error.message : '更新用户失败')
             } finally {
@@ -433,9 +464,7 @@ function UserListPage() {
               color={editingUser ? ROLE_COLORS[editingUser.role] : '#F0F0F0'}
               className="role-tag"
               style={{
-                color: editingUser
-                  ? ROLE_TEXT_COLORS[editingUser.role]
-                  : '#86909C',
+                color: editingUser ? ROLE_TEXT_COLORS[editingUser.role] : '#86909C',
               }}
             >
               {editingUser ? ROLE_LABELS[editingUser.role] : '-'}

@@ -1,8 +1,9 @@
 import type {
   AuthSession,
   TaskDetail,
-  TaskSummary,
+  TaskListResponse,
   UploadedFileRef,
+  UserListResponse,
   UserSummary,
 } from '../types/models'
 
@@ -17,6 +18,23 @@ type ApiErrorPayload = {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+
+function buildQueryString(
+  params: Record<string, string | number | boolean | undefined>,
+): string {
+  const searchParams = new URLSearchParams()
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined) {
+      return
+    }
+
+    searchParams.set(key, String(value))
+  })
+
+  const queryString = searchParams.toString()
+  return queryString ? `?${queryString}` : ''
+}
 
 export class ApiError extends Error {
   status: number
@@ -83,12 +101,46 @@ export async function login(
   })
 }
 
-export async function getUsers(token: string): Promise<UserSummary[]> {
-  const payload = await request<{ items: UserSummary[] }>('/api/v1/users', {
-    token,
-  })
+export async function getUsers(
+  token: string,
+  options?: {
+    page?: number
+    pageSize?: number
+    all?: boolean
+  },
+): Promise<UserListResponse> {
+  const payload = await request<UserListResponse>(
+    `/api/v1/users${buildQueryString({
+      page: options?.page,
+      pageSize: options?.pageSize,
+      all: options?.all,
+    })}`,
+    {
+      token,
+    },
+  )
 
-  return payload.items
+  return payload
+}
+
+export async function getTasks(
+  token: string,
+  options?: {
+    page?: number
+    pageSize?: number
+  },
+): Promise<TaskListResponse> {
+  const payload = await request<TaskListResponse>(
+    `/api/v1/tasks${buildQueryString({
+      page: options?.page,
+      pageSize: options?.pageSize,
+    })}`,
+    {
+      token,
+    },
+  )
+
+  return payload
 }
 
 export async function createUser(
@@ -148,14 +200,6 @@ export async function deleteUser(userId: number, token: string): Promise<void> {
   }
 }
 
-export async function getTasks(token: string): Promise<TaskSummary[]> {
-  const payload = await request<{ items: TaskSummary[] }>('/api/v1/tasks', {
-    token,
-  })
-
-  return payload.items
-}
-
 export async function getTaskDetail(
   taskId: number,
   token: string,
@@ -186,6 +230,23 @@ export async function createTask(
   })
 
   return response.item
+}
+
+export async function deleteTask(taskId: number, token: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/tasks/${taskId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const payload = await parseJsonSafely<ApiErrorPayload>(response)
+    throw new ApiError(
+      payload?.error?.message || `请求失败，状态码 ${response.status}`,
+      response.status,
+    )
+  }
 }
 
 export async function completeTaskStage(

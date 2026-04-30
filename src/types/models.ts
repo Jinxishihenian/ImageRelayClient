@@ -24,6 +24,25 @@ export type UserSummary = {
   createdAt: string
 }
 
+export type PaginationMeta = {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+export type UserListSummary = {
+  total: number
+  adminCount: number
+  workerCount: number
+}
+
+export type UserListResponse = {
+  items: UserSummary[]
+  pagination: PaginationMeta
+  summary: UserListSummary
+}
+
 export type TaskAssignee = {
   id: number
   username: string
@@ -45,6 +64,18 @@ export type TaskSummary = {
   }
   myRole: UserRole
   canHandle: boolean
+}
+
+export type TaskListSummary = {
+  total: number
+  actionableCount: number
+  finishedCount: number
+}
+
+export type TaskListResponse = {
+  items: TaskSummary[]
+  pagination: PaginationMeta
+  summary: TaskListSummary
 }
 
 export type TaskDownload = {
