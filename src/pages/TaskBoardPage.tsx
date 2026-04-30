@@ -1,12 +1,20 @@
-import { Button, Card, Col, Row, Table, Tag, Typography, message } from 'antd'
+import { Button, Card, Col, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { getTasks, getUsers } from '../api/client'
+import { deleteTask, getTasks, getUsers } from '../api/client'
 import CreateTaskDrawer from '../components/CreateTaskDrawer'
 import TaskDetailDrawer from '../components/TaskDetailDrawer'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
-import type { TaskStatus, TaskSummary, UserSummary } from '../types/models'
+import type { TaskListSummary, TaskStatus, TaskSummary, UserSummary } from '../types/models'
+
+const PAGE_SIZE = 10
+
+const EMPTY_TASK_SUMMARY: TaskListSummary = {
+  total: 0,
+  actionableCount: 0,
+  finishedCount: 0,
+}
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', {
@@ -15,10 +23,7 @@ function formatDate(value: string) {
 }
 
 // 按任务阶段固定配色，避免把“当前是否可处理”和“任务所处状态”混在一起。
-const taskStatusTagStyleMap: Record<
-  TaskStatus,
-  { background: string; color: string }
-> = {
+const taskStatusTagStyleMap: Record<TaskStatus, { background: string; color: string }> = {
   pending_clean: {
     background: '#FFF7E8',
     color: '#FAAD14',
@@ -42,34 +47,46 @@ function TaskBoardPage() {
   const { containerRef: tableContainerRef, scrollY } = useTableScrollY()
   const [tasks, setTasks] = useState<TaskSummary[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
+  const [summary, setSummary] = useState<TaskListSummary>(EMPTY_TASK_SUMMARY)
   const [loading, setLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
   const [, startTransition] = useTransition()
 
-  const loadTasks = useCallback(async (options?: { silent?: boolean }) => {
-    if (!session) {
-      return
-    }
-
-    if (!options?.silent) {
-      setLoading(true)
-    }
-
-    try {
-      const items = await getTasks(session.token)
-      startTransition(() => {
-        setTasks(items)
-      })
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '任务列表加载失败')
-    } finally {
-      if (!options?.silent) {
-        setLoading(false)
+  const loadTasks = useCallback(
+    async (page: number, options?: { silent?: boolean }) => {
+      if (!session) {
+        return
       }
-    }
-  }, [session, startTransition])
+
+      if (!options?.silent) {
+        setLoading(true)
+      }
+
+      try {
+        const response = await getTasks(session.token, {
+          page,
+          pageSize: PAGE_SIZE,
+        })
+
+        startTransition(() => {
+          setTasks(response.items)
+          setSummary(response.summary)
+          setCurrentPage(response.pagination.page)
+        })
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '任务列表加载失败')
+      } finally {
+        if (!options?.silent) {
+          setLoading(false)
+        }
+      }
+    },
+    [session, startTransition],
+  )
 
   const loadUsers = useCallback(async () => {
     if (!session || session.user.role !== 'admin') {
@@ -77,9 +94,11 @@ function TaskBoardPage() {
     }
 
     try {
-      const items = await getUsers(session.token)
+      // 创建任务抽屉需要完整用户选项，不能被列表默认分页截断。
+      const response = await getUsers(session.token, { all: true })
+
       startTransition(() => {
-        setUsers(items)
+        setUsers(response.items)
       })
     } catch (error) {
       message.error(error instanceof Error ? error.message : '用户列表加载失败')
@@ -88,10 +107,36 @@ function TaskBoardPage() {
 
   useEffect(() => {
     queueMicrotask(() => {
-      void loadTasks()
+      void loadTasks(currentPage)
+    })
+  }, [currentPage, loadTasks])
+
+  useEffect(() => {
+    queueMicrotask(() => {
       void loadUsers()
     })
-  }, [loadTasks, loadUsers])
+  }, [loadUsers])
+
+  const handleDeleteTask = useCallback(
+    async (taskId: number) => {
+      if (!session) {
+        return
+      }
+
+      setDeletingTaskId(taskId)
+
+      try {
+        await deleteTask(taskId, session.token)
+        message.success('任务已删除')
+        await loadTasks(currentPage, { silent: true })
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '任务删除失败')
+      } finally {
+        setDeletingTaskId(null)
+      }
+    },
+    [currentPage, loadTasks, session],
+  )
 
   const columns: TableColumnsType<TaskSummary> = [
     {
@@ -150,15 +195,41 @@ function TaskBoardPage() {
       title: '操作',
       key: 'actions',
       render: (_value, record) => (
-        <Button
-          type={record.canHandle ? 'primary' : 'default'}
-          onClick={() => {
-            setSelectedTaskId(record.id)
-            setDetailOpen(true)
-          }}
-        >
-          {record.canHandle ? '进入处理' : '查看详情'}
-        </Button>
+        <Space size="small">
+          <Button
+            type={record.canHandle ? 'primary' : 'default'}
+            onClick={() => {
+              setSelectedTaskId(record.id)
+              setDetailOpen(true)
+            }}
+          >
+            {record.canHandle ? '进入处理' : '查看详情'}
+          </Button>
+
+          {session?.user.role === 'admin' ? (
+            <Popconfirm
+              title="确认删除该任务吗？"
+              description="仅删除任务记录，不会同步删除已上传文件。"
+              okText="删除"
+              cancelText="取消"
+              okButtonProps={{
+                danger: true,
+                loading: deletingTaskId === record.id,
+              }}
+              onConfirm={async () => {
+                await handleDeleteTask(record.id)
+              }}
+            >
+              <Button
+                danger
+                disabled={deletingTaskId !== null}
+                loading={deletingTaskId === record.id}
+              >
+                删除
+              </Button>
+            </Popconfirm>
+          ) : null}
+        </Space>
       ),
     },
   ]
@@ -166,18 +237,18 @@ function TaskBoardPage() {
   const metrics = [
     {
       label: '总任务数',
-      value: tasks.length,
-      caption: '当前系统中已创建的全部任务',
+      value: summary.total,
+      caption: '当前可见任务范围内的全部任务总量',
     },
     {
       label: '待我处理',
-      value: tasks.filter((task) => task.canHandle).length,
-      caption: '按你的角色进入当前可提交阶段',
+      value: summary.actionableCount,
+      caption: '按你的角色进入当前可提交阶段的任务数量',
     },
     {
       label: '已完成',
-      value: tasks.filter((task) => task.status === 'finished').length,
-      caption: '所有阶段均已完成交接的任务',
+      value: summary.finishedCount,
+      caption: '当前可见任务范围内已完成交接的任务数量',
     },
   ]
 
@@ -232,14 +303,6 @@ function TaskBoardPage() {
       </Row>
 
       <Card className="panel-card page-table-card">
-        <div className="table-card-toolbar">
-          <div className="toolbar-copy">
-            <Typography.Title level={5}>任务列表</Typography.Title>
-            <Typography.Text className="muted-text">
-              按固定阶段展示任务流转状态、负责人和可执行操作。
-            </Typography.Text>
-          </div>
-        </div>
         <div ref={tableContainerRef} className="table-scroll-host">
           <Table<TaskSummary>
             rowKey="id"
@@ -247,7 +310,18 @@ function TaskBoardPage() {
             columns={columns}
             dataSource={tasks}
             scroll={scrollY ? { y: scrollY } : undefined}
-            pagination={{ pageSize: 8, hideOnSinglePage: true }}
+            pagination={{
+              current: currentPage,
+              pageSize: PAGE_SIZE,
+              total: summary.total,
+              hideOnSinglePage: true,
+              showSizeChanger: false,
+              onChange: (page) => {
+                if (page !== currentPage) {
+                  setCurrentPage(page)
+                }
+              },
+            }}
             locale={{
               emptyText: '当前暂无任务',
             }}
@@ -263,7 +337,7 @@ function TaskBoardPage() {
           setSelectedTaskId(null)
         }}
         onTaskChanged={() => {
-          void loadTasks({ silent: true })
+          void loadTasks(currentPage, { silent: true })
         }}
       />
 
@@ -274,7 +348,12 @@ function TaskBoardPage() {
           setCreateOpen(false)
         }}
         onCreated={() => {
-          void loadTasks({ silent: true })
+          if (currentPage === 1) {
+            void loadTasks(1, { silent: true })
+            return
+          }
+
+          setCurrentPage(1)
         }}
       />
     </div>

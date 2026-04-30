@@ -24,7 +24,7 @@ function LoginPage() {
             Image Relay MVP
           </Typography.Text>
           <Typography.Title className="login-title">
-            资源中转管理器
+            资源中转管理平台
           </Typography.Title>
           <Typography.Paragraph className="muted-paragraph">
             使用数据库预置账号登录后，按固定角色完成任务创建、文件交接和阶段流转。

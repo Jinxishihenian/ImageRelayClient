@@ -133,7 +133,7 @@ function MainLayout() {
         <Layout.Header className="app-header">
           <div className="header-copy">
             <Typography.Title level={4} className="header-title">
-              资源中转管理器
+              资源中转管理平台
             </Typography.Title>
             <Typography.Text className="muted-text">
               固定角色、固定阶段、固定任务交接链路
