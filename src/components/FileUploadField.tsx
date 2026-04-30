@@ -72,9 +72,11 @@ function FileUploadField({
     <Card size="small" className="panel-card">
       <div className="upload-field">
         <div>
-          <Typography.Text strong>{label}</Typography.Text>
+          <Typography.Text strong className="drawer-section-title">
+            {label}
+          </Typography.Text>
           {description ? (
-            <Typography.Paragraph className="muted-paragraph">
+            <Typography.Paragraph className="drawer-section-copy">
               {description}
             </Typography.Paragraph>
           ) : null}
@@ -85,7 +87,7 @@ function FileUploadField({
           ) : null}
           {value ? (
             <div className="upload-result">
-              <span>{value.originalName}</span>
+              <span className="upload-value-name">{value.originalName}</span>
               <span className="muted-text">{formatFileSize(value.size)}</span>
             </div>
           ) : (

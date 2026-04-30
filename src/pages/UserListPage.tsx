@@ -15,9 +15,9 @@ import {
   message,
   type TableColumnsType,
 } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { createUser, deleteUser, getUsers, updateUser } from '../api/client'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
 import type { UserRole, UserSummary } from '../types/models'
 
@@ -33,10 +33,10 @@ type EditUserFormValues = {
 }
 
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string; color: string }> = [
-  { value: 'admin', label: '管理员', color: 'geekblue' },
-  { value: 'cleaner', label: '数据清洗者', color: 'gold' },
-  { value: 'annotator', label: '数据标注者', color: 'cyan' },
-  { value: 'trainer', label: '模型训练者', color: 'purple' },
+  { value: 'admin', label: '管理员', color: '#FFF7E8' },
+  { value: 'cleaner', label: '数据清洗者', color: '#E6F4FF' },
+  { value: 'annotator', label: '数据标注者', color: '#F3E8FF' },
+  { value: 'trainer', label: '模型训练者', color: '#FFF1F0' },
 ]
 
 const ROLE_LABELS = ROLE_OPTIONS.reduce(
@@ -55,6 +55,13 @@ const ROLE_COLORS = ROLE_OPTIONS.reduce(
   {} as Record<UserRole, string>,
 )
 
+const ROLE_TEXT_COLORS: Record<UserRole, string> = {
+  admin: '#FAAD14',
+  cleaner: '#1677FF',
+  annotator: '#722ED1',
+  trainer: '#F53F3F',
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', {
     hour12: false,
@@ -72,27 +79,36 @@ function UserListPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserSummary | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
+  const [, startTransition] = useTransition()
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async (options?: { silent?: boolean }) => {
     if (!session || session.user.role !== 'admin') {
       return
     }
 
-    setLoading(true)
+    if (!options?.silent) {
+      setLoading(true)
+    }
 
     try {
       const items = await getUsers(session.token)
-      setUsers(items)
+      startTransition(() => {
+        setUsers(items)
+      })
     } catch (error) {
       message.error(error instanceof Error ? error.message : '用户列表加载失败')
     } finally {
-      setLoading(false)
+      if (!options?.silent) {
+        setLoading(false)
+      }
     }
-  }
+  }, [session, startTransition])
 
   useEffect(() => {
-    void loadUsers()
-  }, [session])
+    queueMicrotask(() => {
+      void loadUsers()
+    })
+  }, [loadUsers])
 
   useEffect(() => {
     if (!createOpen) {
@@ -113,108 +129,112 @@ function UserListPage() {
     })
   }, [editForm, editingUser])
 
-  const columns = useMemo<TableColumnsType<UserSummary>>(
-    () => [
-      {
-        title: '用户名',
-        dataIndex: 'username',
-        key: 'username',
-        render: (value: string, record) => (
-          <div className="compact-stack">
-            <Typography.Text strong>{value}</Typography.Text>
-            <Typography.Text className="muted-text">
-              用户 ID：{record.id}
-            </Typography.Text>
-          </div>
-        ),
-      },
-      {
-        title: '角色',
-        dataIndex: 'role',
-        key: 'role',
-        render: (role: UserRole) => (
-          <Tag color={ROLE_COLORS[role]}>{ROLE_LABELS[role]}</Tag>
-        ),
-      },
-      {
-        title: '创建时间',
-        dataIndex: 'createdAt',
-        key: 'createdAt',
-        render: (value: string) => formatDate(value),
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        render: (_value, record) => (
-          <Space wrap>
+  const columns: TableColumnsType<UserSummary> = [
+    {
+      title: '用户名',
+      dataIndex: 'username',
+      key: 'username',
+      render: (value: string, record) => (
+        <div className="compact-stack">
+          <Typography.Text strong>{value}</Typography.Text>
+          <Typography.Text className="muted-text">
+            用户 ID：{record.id}
+          </Typography.Text>
+        </div>
+      ),
+    },
+    {
+      title: '角色',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role: UserRole) => (
+        <Tag
+          bordered={false}
+          color={ROLE_COLORS[role]}
+          className="role-tag"
+          style={{ color: ROLE_TEXT_COLORS[role] }}
+        >
+          {ROLE_LABELS[role]}
+        </Tag>
+      ),
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (value: string) => formatDate(value),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      render: (_value, record) => (
+        <Space wrap>
+          <Button
+            onClick={() => {
+              setEditingUser(record)
+            }}
+          >
+            编辑
+          </Button>
+          <Popconfirm
+            title="确认删除该用户吗？"
+            description="已被任务引用的用户不能删除。"
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{
+              danger: true,
+              loading: deletingUserId === record.id,
+            }}
+            onConfirm={() => {
+              void (async () => {
+                if (!session) {
+                  return
+                }
+
+                setDeletingUserId(record.id)
+
+                try {
+                  await deleteUser(record.id, session.token)
+                  message.success('用户已删除')
+                  await loadUsers({ silent: true })
+                } catch (error) {
+                  message.error(error instanceof Error ? error.message : '删除用户失败')
+                } finally {
+                  setDeletingUserId(null)
+                }
+              })()
+            }}
+          >
             <Button
-              onClick={() => {
-                setEditingUser(record)
-              }}
+              danger
+              disabled={session?.user.id === record.id}
+              title={session?.user.id === record.id ? '不能删除当前登录账号' : undefined}
             >
-              编辑
+              删除
             </Button>
-            <Popconfirm
-              title="确认删除该用户吗？"
-              description="已被任务引用的用户不能删除。"
-              okText="删除"
-              cancelText="取消"
-              okButtonProps={{
-                danger: true,
-                loading: deletingUserId === record.id,
-              }}
-              onConfirm={() => {
-                void (async () => {
-                  if (!session) {
-                    return
-                  }
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
 
-                  setDeletingUserId(record.id)
-
-                  try {
-                    await deleteUser(record.id, session.token)
-                    message.success('用户已删除')
-                    await loadUsers()
-                  } catch (error) {
-                    message.error(error instanceof Error ? error.message : '删除用户失败')
-                  } finally {
-                    setDeletingUserId(null)
-                  }
-                })()
-              }}
-            >
-              <Button
-                danger
-                disabled={session?.user.id === record.id}
-                title={session?.user.id === record.id ? '不能删除当前登录账号' : undefined}
-              >
-                删除
-              </Button>
-            </Popconfirm>
-          </Space>
-        ),
-      },
-    ],
-    [deletingUserId, session],
-  )
-
-  const metrics = useMemo(
-    () => [
-      {
-        label: '用户总数',
-        value: users.length,
-      },
-      {
-        label: '管理员',
-        value: users.filter((user) => user.role === 'admin').length,
-      },
-      {
-        label: '执行角色用户',
-        value: users.filter((user) => user.role !== 'admin').length,
-      },
-    ],
-    [users],
-  )
+  const metrics = [
+    {
+      label: '用户总数',
+      value: users.length,
+      caption: '系统内全部可登录账号',
+    },
+    {
+      label: '管理员',
+      value: users.filter((user) => user.role === 'admin').length,
+      caption: '具备用户和任务全局管理权限',
+    },
+    {
+      label: '执行角色用户',
+      value: users.filter((user) => user.role !== 'admin').length,
+      caption: '承担清洗、标注、训练三类执行职责',
+    },
+  ]
 
   if (!session) {
     return null
@@ -222,8 +242,8 @@ function UserListPage() {
 
   return (
     <div className="page-stack page-fill page-table-layout">
-      <section className="page-header">
-        <div>
+      <section className="page-header page-header-surface">
+        <div className="page-header-copy">
           <Typography.Text className="section-eyebrow">
             User Management
           </Typography.Text>
@@ -235,15 +255,17 @@ function UserListPage() {
           </Typography.Paragraph>
         </div>
 
-        <Button
-          type="primary"
-          size="large"
-          onClick={() => {
-            setCreateOpen(true)
-          }}
-        >
-          新增用户
-        </Button>
+        <div className="page-actions">
+          <Button
+            type="primary"
+            size="large"
+            onClick={() => {
+              setCreateOpen(true)
+            }}
+          >
+            新增用户
+          </Button>
+        </div>
       </section>
 
       <Row gutter={[16, 12]} className="task-metrics-row">
@@ -253,12 +275,23 @@ function UserListPage() {
             <Card className="panel-card metric-card task-metric-card">
               <Typography.Text className="muted-text">{metric.label}</Typography.Text>
               <Typography.Title level={3}>{metric.value}</Typography.Title>
+              <Typography.Text className="metric-caption">
+                {metric.caption}
+              </Typography.Text>
             </Card>
           </Col>
         ))}
       </Row>
 
       <Card className="panel-card page-table-card">
+        <div className="table-card-toolbar">
+          <div className="toolbar-copy">
+            <Typography.Title level={5}>账号列表</Typography.Title>
+            <Typography.Text className="muted-text">
+              维护登录账号、固定角色以及创建时间信息。
+            </Typography.Text>
+          </div>
+        </div>
         <div ref={tableContainerRef} className="table-scroll-host">
           <Table<UserSummary>
             rowKey="id"
@@ -302,7 +335,7 @@ function UserListPage() {
               await createUser(values, session.token)
               message.success('用户创建成功')
               setCreateOpen(false)
-              await loadUsers()
+              await loadUsers({ silent: true })
             } catch (error) {
               message.error(error instanceof Error ? error.message : '创建用户失败')
             } finally {
@@ -378,7 +411,7 @@ function UserListPage() {
               )
               message.success('用户更新成功')
               setEditingUser(null)
-              await loadUsers()
+              await loadUsers({ silent: true })
             } catch (error) {
               message.error(error instanceof Error ? error.message : '更新用户失败')
             } finally {
@@ -395,7 +428,16 @@ function UserListPage() {
           </Form.Item>
 
           <Form.Item label="角色">
-            <Tag color={editingUser ? ROLE_COLORS[editingUser.role] : 'default'}>
+            <Tag
+              bordered={false}
+              color={editingUser ? ROLE_COLORS[editingUser.role] : '#F0F0F0'}
+              className="role-tag"
+              style={{
+                color: editingUser
+                  ? ROLE_TEXT_COLORS[editingUser.role]
+                  : '#86909C',
+              }}
+            >
               {editingUser ? ROLE_LABELS[editingUser.role] : '-'}
             </Tag>
             <Typography.Paragraph className="muted-paragraph compact">

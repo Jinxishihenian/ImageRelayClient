@@ -8,7 +8,7 @@ import {
   type MenuProps,
 } from 'antd'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import type { UserRole } from '../types/models'
 
 const roleLabels = {
@@ -19,10 +19,17 @@ const roleLabels = {
 } as const
 
 const roleTagColors: Record<UserRole, string> = {
-  admin: 'gold',
-  cleaner: 'cyan',
-  annotator: 'geekblue',
-  trainer: 'purple',
+  admin: '#FFF7E8',
+  cleaner: '#E6F4FF',
+  annotator: '#F3E8FF',
+  trainer: '#FFF1F0',
+}
+
+const roleTagTextColors: Record<UserRole, string> = {
+  admin: '#FAAD14',
+  cleaner: '#1677FF',
+  annotator: '#722ED1',
+  trainer: '#F53F3F',
 }
 
 function formatCreatedAt(createdAt: string) {
@@ -101,7 +108,7 @@ function MainLayout() {
       >
         <div className="brand-block">
           <span className="brand-mark">IR</span>
-          <div>
+          <div className="brand-copy">
             <Typography.Text className="section-eyebrow">
               Image Relay
             </Typography.Text>
@@ -125,9 +132,9 @@ function MainLayout() {
       <Layout className="app-main">
         <Layout.Header className="app-header">
           <div className="header-copy">
-            {/*<Typography.Title level={2} className="page-title header-title">*/}
-            {/*  资源中转管理器*/}
-            {/*</Typography.Title>*/}
+            <Typography.Title level={4} className="header-title">
+              资源中转管理器
+            </Typography.Title>
             <Typography.Text className="muted-text">
               固定角色、固定阶段、固定任务交接链路
             </Typography.Text>
@@ -148,6 +155,7 @@ function MainLayout() {
                     bordered={false}
                     color={roleTagColors[session.user.role]}
                     className="user-role-tag"
+                    style={{ color: roleTagTextColors[session.user.role] }}
                   >
                     {roleLabels[session.user.role]}
                   </Tag>

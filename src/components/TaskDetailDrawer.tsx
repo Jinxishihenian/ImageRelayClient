@@ -12,9 +12,9 @@ import {
   Typography,
   message,
 } from 'antd'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { completeTaskStage, downloadTaskFile, getTaskDetail } from '../api/client'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import type { TaskDetail, UploadedFileRef, UserRole } from '../types/models'
 import FileUploadField from './FileUploadField'
 
@@ -57,6 +57,18 @@ function getStageUploadRule(role: UserRole | null) {
   }
 }
 
+function getTaskStatusTagStyle(canHandle: boolean) {
+  return canHandle
+    ? {
+        background: '#E6F4FF',
+        color: '#1677FF',
+      }
+    : {
+        background: '#FAFAFA',
+        color: '#4E5969',
+      }
+}
+
 function TaskDetailDrawer({
   taskId,
   open,
@@ -69,6 +81,7 @@ function TaskDetailDrawer({
   const [task, setTask] = useState<TaskDetail | null>(null)
   const [remark, setRemark] = useState('')
   const [uploadedFile, setUploadedFile] = useState<UploadedFileRef | null>(null)
+  const [, startTransition] = useTransition()
   const uploadRule = getStageUploadRule(task?.currentStage.role ?? null)
 
   useEffect(() => {
@@ -76,28 +89,38 @@ function TaskDetailDrawer({
       return
     }
 
-    setLoading(true)
-    setRemark('')
-    setUploadedFile(null)
+    queueMicrotask(() => {
+      setLoading(true)
+      setRemark('')
+      setUploadedFile(null)
 
-    void getTaskDetail(taskId, session.token)
-      .then((detail) => {
-        setTask(detail)
+      void getTaskDetail(taskId, session.token)
+        .then((detail) => {
+          startTransition(() => {
+            setTask(detail)
+          })
+        })
+        .catch((error) => {
+          message.error(error instanceof Error ? error.message : '任务详情加载失败')
+        })
+        .finally(() => {
+          setLoading(false)
+        })
       })
-      .catch((error) => {
-        message.error(error instanceof Error ? error.message : '任务详情加载失败')
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [open, session, taskId])
+  }, [open, session, startTransition, taskId])
 
   return (
     <Drawer
       open={open}
       title={task ? task.title : '任务详情'}
       width={620}
-      onClose={onClose}
+      onClose={() => {
+        setTask(null)
+        setRemark('')
+        setUploadedFile(null)
+        setLoading(false)
+        onClose()
+      }}
       destroyOnClose
       loading={loading}
     >
@@ -106,6 +129,7 @@ function TaskDetailDrawer({
       ) : (
         <div className="detail-stack">
           <Descriptions
+            className="drawer-descriptions"
             bordered
             size="small"
             column={1}
@@ -113,11 +137,20 @@ function TaskDetailDrawer({
               {
                 key: 'status',
                 label: '当前状态',
-                children: (
-                  <Tag color={task.canHandle ? 'processing' : 'default'}>
-                    {task.statusLabel}
-                  </Tag>
-                ),
+                children: (() => {
+                  const tagStyle = getTaskStatusTagStyle(task.canHandle)
+
+                  return (
+                    <Tag
+                      bordered={false}
+                      className="status-tag"
+                      color={tagStyle.background}
+                      style={{ color: tagStyle.color }}
+                    >
+                      {task.statusLabel}
+                    </Tag>
+                  )
+                })(),
               },
               {
                 key: 'description',
@@ -148,7 +181,9 @@ function TaskDetailDrawer({
           />
 
           <Card size="small" className="panel-card">
-            <Typography.Title level={5}>可下载文件</Typography.Title>
+            <Typography.Title level={5} className="drawer-section-title">
+              可下载文件
+            </Typography.Title>
             {task.downloads.length === 0 ? (
               <Typography.Text className="muted-text">
                 当前角色暂无可下载文件
@@ -193,21 +228,23 @@ function TaskDetailDrawer({
           </Card>
 
           <Card size="small" className="panel-card">
-            <Typography.Title level={5}>阶段备注</Typography.Title>
+            <Typography.Title level={5} className="drawer-section-title">
+              阶段备注
+            </Typography.Title>
             <div className="remark-list">
-              <div>
+              <div className="remark-section">
                 <Typography.Text strong>清洗备注</Typography.Text>
                 <Typography.Paragraph className="muted-paragraph">
                   {task.remarks.cleaner || '暂无'}
                 </Typography.Paragraph>
               </div>
-              <div>
+              <div className="remark-section">
                 <Typography.Text strong>标注备注</Typography.Text>
                 <Typography.Paragraph className="muted-paragraph">
                   {task.remarks.annotator || '暂无'}
                 </Typography.Paragraph>
               </div>
-              <div>
+              <div className="remark-section">
                 <Typography.Text strong>训练备注</Typography.Text>
                 <Typography.Paragraph className="muted-paragraph">
                   {task.remarks.trainer || '暂无'}
@@ -217,7 +254,7 @@ function TaskDetailDrawer({
           </Card>
 
           {task.canSubmitCurrentStage ? (
-            <Card size="small" className="panel-card">
+            <Card size="small" className="panel-card stage-submit-card">
               <Space direction="vertical" size={16} style={{ width: '100%' }}>
                 <Alert
                   type="info"
@@ -275,7 +312,9 @@ function TaskDetailDrawer({
                       session.token,
                     )
                       .then((detail) => {
-                        setTask(detail)
+                        startTransition(() => {
+                          setTask(detail)
+                        })
                         setRemark('')
                         setUploadedFile(null)
                         message.success('任务阶段已提交')

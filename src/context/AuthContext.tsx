@@ -1,22 +1,10 @@
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { login as loginRequest } from '../api/client'
 import type { AuthSession } from '../types/models'
-
-type AuthContextValue = {
-  session: AuthSession | null
-  login: (username: string, password: string) => Promise<void>
-  logout: () => void
-}
+import type { AuthContextValue } from './useAuth'
+import { AuthContext } from './AuthContextObject'
 
 const STORAGE_KEY = 'image-relay-auth-session'
-
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 function loadStoredSession(): AuthSession | null {
   const rawValue = window.localStorage.getItem(STORAGE_KEY)
@@ -55,14 +43,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-
-  if (!context) {
-    throw new Error('useAuth 必须在 AuthProvider 内使用。')
-  }
-
-  return context
 }

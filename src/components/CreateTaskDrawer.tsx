@@ -8,9 +8,9 @@ import {
   Typography,
   message,
 } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { createTask } from '../api/client'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import type {
   TaskDetail,
   UploadedFileRef,
@@ -53,13 +53,6 @@ function CreateTaskDrawer({
   const [submitting, setSubmitting] = useState(false)
   const [sourceFile, setSourceFile] = useState<UploadedFileRef | null>(null)
 
-  useEffect(() => {
-    if (!open) {
-      form.resetFields()
-      setSourceFile(null)
-    }
-  }, [form, open])
-
   if (!session) {
     return null
   }
@@ -69,7 +62,11 @@ function CreateTaskDrawer({
       open={open}
       width={520}
       title="创建任务"
-      onClose={onClose}
+      onClose={() => {
+        form.resetFields()
+        setSourceFile(null)
+        onClose()
+      }}
       destroyOnClose
       extra={
         <Space>
@@ -86,7 +83,7 @@ function CreateTaskDrawer({
         </Space>
       }
     >
-      <Typography.Paragraph className="muted-paragraph">
+      <Typography.Paragraph className="drawer-helper">
         管理员创建任务时需要上传初始文件，并为三类执行人分别指定负责人。初始文件仅支持{' '}
         {ARCHIVE_FILE_HINT}。
       </Typography.Paragraph>
