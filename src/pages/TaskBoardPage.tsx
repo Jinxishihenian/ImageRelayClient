@@ -1,4 +1,4 @@
-import { Button, Card, Col, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
+import { Button, Card, Col, Input, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { deleteTask, getTasks, getUsers } from '../api/client'
@@ -43,6 +43,7 @@ const taskStatusTagStyleMap: Record<TaskStatus, { background: string; color: str
 }
 
 function TaskBoardPage() {
+  const { Search } = Input
   const { session } = useAuth()
   const { containerRef: tableContainerRef, scrollY } = useTableScrollY()
   const [tasks, setTasks] = useState<TaskSummary[]>([])
@@ -54,10 +55,12 @@ function TaskBoardPage() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
+  const [searchInput, setSearchInput] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState('')
   const [, startTransition] = useTransition()
 
   const loadTasks = useCallback(
-    async (page: number, options?: { silent?: boolean }) => {
+    async (page: number, keyword: string, options?: { silent?: boolean }) => {
       if (!session) {
         return
       }
@@ -70,6 +73,7 @@ function TaskBoardPage() {
         const response = await getTasks(session.token, {
           page,
           pageSize: PAGE_SIZE,
+          keyword,
         })
 
         startTransition(() => {
@@ -107,15 +111,37 @@ function TaskBoardPage() {
 
   useEffect(() => {
     queueMicrotask(() => {
-      void loadTasks(currentPage)
+      void loadTasks(currentPage, searchKeyword)
     })
-  }, [currentPage, loadTasks])
+  }, [currentPage, loadTasks, searchKeyword])
 
   useEffect(() => {
     queueMicrotask(() => {
       void loadUsers()
     })
   }, [loadUsers])
+
+  const handleSearch = useCallback((value: string) => {
+    const normalizedKeyword = value.trim()
+    setSearchInput(normalizedKeyword)
+
+    if (normalizedKeyword !== searchKeyword) {
+      setSearchKeyword(normalizedKeyword)
+
+      if (currentPage !== 1) {
+        setCurrentPage(1)
+      }
+
+      return
+    }
+
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+      return
+    }
+
+    void loadTasks(1, normalizedKeyword)
+  }, [currentPage, loadTasks, searchKeyword])
 
   const handleDeleteTask = useCallback(
     async (taskId: number) => {
@@ -128,14 +154,14 @@ function TaskBoardPage() {
       try {
         await deleteTask(taskId, session.token)
         message.success('任务已删除')
-        await loadTasks(currentPage, { silent: true })
+        await loadTasks(currentPage, searchKeyword, { silent: true })
       } catch (error) {
         message.error(error instanceof Error ? error.message : '任务删除失败')
       } finally {
         setDeletingTaskId(null)
       }
     },
-    [currentPage, loadTasks, session],
+    [currentPage, loadTasks, searchKeyword, session],
   )
 
   const columns: TableColumnsType<TaskSummary> = [
@@ -303,6 +329,31 @@ function TaskBoardPage() {
       </Row>
 
       <Card className="panel-card page-table-card">
+        <div className="table-card-toolbar task-table-toolbar">
+          <div className="toolbar-copy">
+            <Typography.Title level={5}>任务列表</Typography.Title>
+            <Typography.Text className="muted-text">
+              按任务名称模糊搜索，结果会同步影响分页和统计。
+            </Typography.Text>
+          </div>
+
+          <Search
+            value={searchInput}
+            allowClear
+            placeholder="请输入任务名称"
+            className="task-search-input"
+            onChange={(event) => {
+              const nextValue = event.target.value
+              setSearchInput(nextValue)
+
+              if (nextValue === '' && searchKeyword !== '') {
+                handleSearch('')
+              }
+            }}
+            onSearch={handleSearch}
+          />
+        </div>
+
         <div ref={tableContainerRef} className="table-scroll-host">
           <Table<TaskSummary>
             rowKey="id"
@@ -323,7 +374,7 @@ function TaskBoardPage() {
               },
             }}
             locale={{
-              emptyText: '当前暂无任务',
+              emptyText: searchKeyword ? '未找到匹配的任务' : '当前暂无任务',
             }}
           />
         </div>
@@ -337,7 +388,7 @@ function TaskBoardPage() {
           setSelectedTaskId(null)
         }}
         onTaskChanged={() => {
-          void loadTasks(currentPage, { silent: true })
+          void loadTasks(currentPage, searchKeyword, { silent: true })
         }}
       />
 
@@ -349,7 +400,7 @@ function TaskBoardPage() {
         }}
         onCreated={() => {
           if (currentPage === 1) {
-            void loadTasks(1, { silent: true })
+            void loadTasks(1, searchKeyword, { silent: true })
             return
           }
 

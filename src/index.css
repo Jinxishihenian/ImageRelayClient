@@ -426,6 +426,14 @@ h6 {
   margin: 0;
 }
 
+.task-table-toolbar {
+  align-items: end;
+}
+
+.task-search-input {
+  width: min(100%, 360px);
+}
+
 .table-scroll-host {
   flex: 1;
   min-height: 0;

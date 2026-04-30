@@ -131,12 +131,14 @@ export async function getTasks(
   options?: {
     page?: number
     pageSize?: number
+    keyword?: string
   },
 ): Promise<TaskListResponse> {
   const payload = await request<TaskListResponse>(
     `/api/v1/tasks${buildQueryString({
       page: options?.page,
       pageSize: options?.pageSize,
+      keyword: options?.keyword?.trim() || undefined,
     })}`,
     {
       token,
