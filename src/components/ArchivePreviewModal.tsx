@@ -12,6 +12,7 @@ type ArchivePreviewModalProps = {
 }
 
 const PAGE_SIZE = 24
+const ARCHIVE_PREVIEW_MODAL_BODY_MAX_HEIGHT = 'calc(100vh - 200px)'
 
 function formatFileSize(size: number) {
   if (size < 1024) {
@@ -32,19 +33,11 @@ function ArchivePreviewModal({
   token,
   onClose,
 }: ArchivePreviewModalProps) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [previewPage, setPreviewPage] = useState<TaskArchivePreviewPage | null>(null)
   const [imageUrlMap, setImageUrlMap] = useState<Record<string, string>>({})
   const objectUrlsRef = useRef<string[]>([])
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    setCurrentPage(1)
-  }, [open, previewEndpoint])
 
   useEffect(() => {
     if (!open) {
@@ -59,8 +52,6 @@ function ArchivePreviewModal({
       })
       objectUrlsRef.current = []
     }
-
-    setLoading(true)
 
     void getTaskFilePreviewPage(previewEndpoint, token, {
       page: currentPage,
@@ -116,6 +107,14 @@ function ArchivePreviewModal({
       footer={null}
       onCancel={onClose}
       destroyOnClose
+      styles={{
+        body: {
+          // 限制预览弹窗内容区高度，避免图片较多时整窗超出一屏。
+          // 仅让 body 内部滚动，这样标题栏会始终保留在可见区域。
+          maxHeight: ARCHIVE_PREVIEW_MODAL_BODY_MAX_HEIGHT,
+          overflowY: 'auto',
+        },
+      }}
     >
       <div className="archive-preview-stack">
         <Typography.Paragraph className="muted-paragraph">
@@ -176,6 +175,8 @@ function ArchivePreviewModal({
                 showSizeChanger={false}
                 onChange={(page) => {
                   if (page !== currentPage) {
+                    // 翻页前先切到加载态，避免大图较多时用户误以为点击未生效。
+                    setLoading(true)
                     setCurrentPage(page)
                   }
                 }}
