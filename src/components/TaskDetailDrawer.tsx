@@ -13,7 +13,12 @@ import {
   message,
 } from 'antd'
 import { useEffect, useState, useTransition } from 'react'
-import { completeTaskStage, downloadTaskFile, getTaskDetail } from '../api/client'
+import {
+  completeTaskStage,
+  downloadTaskFile,
+  getTaskDetail,
+  getTaskFileDownloadLink,
+} from '../api/client'
 import { useAuth } from '../context/useAuth'
 import type {
   TaskDetail,
@@ -21,6 +26,7 @@ import type {
   UploadPurpose,
   UserRole,
 } from '../types/models'
+import { copyTextToClipboard } from '../utils/clipboard'
 import ArchivePreviewModal from './ArchivePreviewModal'
 import FileUploadField from './FileUploadField'
 
@@ -233,6 +239,37 @@ function TaskDetailDrawer({
                           预览
                         </Button>
                       ) : null,
+                      <Button
+                        key="copy-link"
+                        size="small"
+                        onClick={() => {
+                          if (!session) {
+                            return
+                          }
+
+                          // 复制的是临时签名下载链接，避免把需要 Authorization 头的接口地址
+                          // 直接暴露给用户后却无法在浏览器地址栏中使用。
+                          void getTaskFileDownloadLink(
+                            `${item.endpoint}-link`,
+                            session.token,
+                          )
+                            .then((payload) => {
+                              copyTextToClipboard(payload.url)
+                              message.success(
+                                '下载链接已复制，可直接粘贴到浏览器地址栏下载',
+                              )
+                            })
+                            .catch((error) => {
+                              message.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : '复制下载链接失败',
+                              )
+                            })
+                        }}
+                      >
+                        复制链接
+                      </Button>,
                       <Button
                         key="download"
                         size="small"

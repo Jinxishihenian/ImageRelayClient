@@ -93,6 +93,11 @@ export type TaskDownload = {
   previewEndpoint: string | null
 }
 
+export type TaskDownloadLink = {
+  url: string
+  expiresAt: string
+}
+
 export type TaskDetail = TaskSummary & {
   remarks: {
     cleaner: string | null

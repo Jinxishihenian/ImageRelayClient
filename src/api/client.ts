@@ -2,6 +2,7 @@ import type {
   AuthSession,
   TaskArchivePreviewPage,
   TaskDetail,
+  TaskDownloadLink,
   TaskListResponse,
   UploadPurpose,
   UploadedFileRef,
@@ -329,6 +330,15 @@ export async function downloadTaskFile(
   anchor.click()
   anchor.remove()
   URL.revokeObjectURL(url)
+}
+
+export async function getTaskFileDownloadLink(
+  endpoint: string,
+  token: string,
+): Promise<TaskDownloadLink> {
+  return request<TaskDownloadLink>(endpoint, {
+    token,
+  })
 }
 
 export async function getTaskFilePreviewPage(

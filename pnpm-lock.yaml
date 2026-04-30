@@ -11,6 +11,9 @@ importers:
       antd:
         specifier: 6.3.7
         version: 6.3.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      copy-to-clipboard:
+        specifier: ^4.0.2
+        version: 4.0.2
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -897,6 +900,9 @@ packages:
   cookie@1.1.1:
     resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
     engines: {node: '>=18'}
+
+  copy-to-clipboard@4.0.2:
+    resolution: {integrity: sha512-gklSft7IuhriZKHKpuoA1fpJSLPNgvUMWMo5BlnzAJm0zNKnznoSv23IjtNqclx8eKi6ZcdvFFzYEER/+U1LoQ==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -2373,6 +2379,8 @@ snapshots:
   convert-source-map@2.0.0: {}
 
   cookie@1.1.1: {}
+
+  copy-to-clipboard@4.0.2: {}
 
   cross-spawn@7.0.6:
     dependencies:
