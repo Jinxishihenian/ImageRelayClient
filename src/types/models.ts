@@ -5,6 +5,12 @@ export type TaskStatus =
   | 'pending_train'
   | 'finished'
 
+export type UploadPurpose =
+  | 'task_source'
+  | 'task_cleaned'
+  | 'task_annotated'
+  | 'task_model'
+
 export type AuthUser = {
   id: number
   username: string
@@ -83,6 +89,8 @@ export type TaskDownload = {
   label: string
   fileName: string
   endpoint: string
+  canPreview: boolean
+  previewEndpoint: string | null
 }
 
 export type TaskDetail = TaskSummary & {
@@ -104,4 +112,17 @@ export type UploadedFileRef = {
   originalName: string
   mimeType: string
   size: number
+}
+
+export type TaskArchivePreviewItem = {
+  id: string
+  name: string
+  mimeType: string
+  size: number
+  endpoint: string
+}
+
+export type TaskArchivePreviewPage = {
+  items: TaskArchivePreviewItem[]
+  pagination: PaginationMeta
 }

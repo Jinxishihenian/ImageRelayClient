@@ -15,7 +15,13 @@ import {
 import { useEffect, useState, useTransition } from 'react'
 import { completeTaskStage, downloadTaskFile, getTaskDetail } from '../api/client'
 import { useAuth } from '../context/useAuth'
-import type { TaskDetail, UploadedFileRef, UserRole } from '../types/models'
+import type {
+  TaskDetail,
+  UploadedFileRef,
+  UploadPurpose,
+  UserRole,
+} from '../types/models'
+import ArchivePreviewModal from './ArchivePreviewModal'
 import FileUploadField from './FileUploadField'
 
 type TaskDetailDrawerProps = {
@@ -57,6 +63,19 @@ function getStageUploadRule(role: UserRole | null) {
   }
 }
 
+function getStageUploadPurpose(role: UserRole | null): UploadPurpose | undefined {
+  switch (role) {
+    case 'cleaner':
+      return 'task_cleaned'
+    case 'annotator':
+      return 'task_annotated'
+    case 'trainer':
+      return 'task_model'
+    default:
+      return undefined
+  }
+}
+
 function getTaskStatusTagStyle(canHandle: boolean) {
   return canHandle
     ? {
@@ -81,8 +100,13 @@ function TaskDetailDrawer({
   const [task, setTask] = useState<TaskDetail | null>(null)
   const [remark, setRemark] = useState('')
   const [uploadedFile, setUploadedFile] = useState<UploadedFileRef | null>(null)
+  const [previewTarget, setPreviewTarget] = useState<{
+    endpoint: string
+    label: string
+  } | null>(null)
   const [, startTransition] = useTransition()
   const uploadRule = getStageUploadRule(task?.currentStage.role ?? null)
+  const uploadPurpose = getStageUploadPurpose(task?.currentStage.role ?? null)
 
   useEffect(() => {
     if (!open || !taskId || !session) {
@@ -118,6 +142,7 @@ function TaskDetailDrawer({
         setTask(null)
         setRemark('')
         setUploadedFile(null)
+        setPreviewTarget(null)
         setLoading(false)
         onClose()
       }}
@@ -194,6 +219,20 @@ function TaskDetailDrawer({
                 renderItem={(item) => (
                   <List.Item
                     actions={[
+                      item.canPreview && item.previewEndpoint ? (
+                        <Button
+                          key="preview"
+                          size="small"
+                          onClick={() => {
+                            setPreviewTarget({
+                              endpoint: item.previewEndpoint!,
+                              label: item.label,
+                            })
+                          }}
+                        >
+                          预览
+                        </Button>
+                      ) : null,
                       <Button
                         key="download"
                         size="small"
@@ -215,7 +254,7 @@ function TaskDetailDrawer({
                       >
                         下载
                       </Button>,
-                    ]}
+                    ].filter(Boolean)}
                   >
                     <List.Item.Meta
                       title={item.label}
@@ -272,6 +311,7 @@ function TaskDetailDrawer({
                     description={uploadRule.description}
                     acceptedExtensions={uploadRule.acceptedExtensions}
                     fileTypeHint={uploadRule.fileTypeHint}
+                    uploadPurpose={uploadPurpose}
                   />
                 ) : null}
 
@@ -337,6 +377,18 @@ function TaskDetailDrawer({
           ) : null}
         </div>
       )}
+
+      {session && previewTarget ? (
+        <ArchivePreviewModal
+          open
+          title={`${previewTarget.label}预览`}
+          previewEndpoint={previewTarget.endpoint}
+          token={session.token}
+          onClose={() => {
+            setPreviewTarget(null)
+          }}
+        />
+      ) : null}
     </Drawer>
   )
 }

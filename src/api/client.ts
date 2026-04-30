@@ -1,7 +1,9 @@
 import type {
   AuthSession,
+  TaskArchivePreviewPage,
   TaskDetail,
   TaskListResponse,
+  UploadPurpose,
   UploadedFileRef,
   UserListResponse,
   UserSummary,
@@ -275,14 +277,23 @@ export async function completeTaskStage(
 export async function uploadBinaryFile(
   file: File,
   token: string,
+  options?: {
+    purpose?: UploadPurpose
+  },
 ): Promise<UploadedFileRef> {
+  const headers: Record<string, string> = {
+    'Content-Type': file.type || 'application/octet-stream',
+    'X-File-Name': encodeURIComponent(file.name),
+  }
+
+  if (options?.purpose) {
+    headers['X-Upload-Purpose'] = options.purpose
+  }
+
   const response = await request<{ item: UploadedFileRef }>('/api/v1/files/upload', {
     method: 'POST',
     token,
-    headers: {
-      'Content-Type': file.type || 'application/octet-stream',
-      'X-File-Name': encodeURIComponent(file.name),
-    },
+    headers,
     body: await file.arrayBuffer(),
   })
 
@@ -318,4 +329,44 @@ export async function downloadTaskFile(
   anchor.click()
   anchor.remove()
   URL.revokeObjectURL(url)
+}
+
+export async function getTaskFilePreviewPage(
+  endpoint: string,
+  token: string,
+  options?: {
+    page?: number
+    pageSize?: number
+  },
+): Promise<TaskArchivePreviewPage> {
+  return request<TaskArchivePreviewPage>(
+    `${endpoint}${buildQueryString({
+      page: options?.page,
+      pageSize: options?.pageSize,
+    })}`,
+    {
+      token,
+    },
+  )
+}
+
+export async function getProtectedBlob(
+  endpoint: string,
+  token: string,
+): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const payload = await parseJsonSafely<ApiErrorPayload>(response)
+    throw new ApiError(
+      payload?.error?.message || `请求失败，状态码 ${response.status}`,
+      response.status,
+    )
+  }
+
+  return response.blob()
 }

@@ -161,6 +161,7 @@ function CreateTaskDrawer({
         description="文件上传成功后才可提交创建任务。当前采用本地目录存储。"
         acceptedExtensions={ARCHIVE_EXTENSIONS}
         fileTypeHint={ARCHIVE_FILE_HINT}
+        uploadPurpose="task_source"
       />
     </Drawer>
   )

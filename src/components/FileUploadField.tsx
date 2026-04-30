@@ -1,7 +1,7 @@
 import { Button, Card, Spin, Typography, message } from 'antd'
 import { useRef, useState } from 'react'
 import { uploadBinaryFile } from '../api/client'
-import type { UploadedFileRef } from '../types/models'
+import type { UploadedFileRef, UploadPurpose } from '../types/models'
 
 type FileUploadFieldProps = {
   label: string
@@ -11,6 +11,7 @@ type FileUploadFieldProps = {
   description?: string
   acceptedExtensions?: string[]
   fileTypeHint?: string
+  uploadPurpose?: UploadPurpose
 }
 
 function normalizeExtension(extension: string) {
@@ -57,6 +58,7 @@ function FileUploadField({
   description,
   acceptedExtensions,
   fileTypeHint,
+  uploadPurpose,
 }: FileUploadFieldProps) {
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -127,7 +129,9 @@ function FileUploadField({
               setUploading(true)
 
               try {
-                const uploaded = await uploadBinaryFile(file, token)
+                const uploaded = await uploadBinaryFile(file, token, {
+                  purpose: uploadPurpose,
+                })
                 onChange(uploaded)
                 message.success(`${file.name} 上传成功`)
               } catch (error) {
