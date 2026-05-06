@@ -1,9 +1,11 @@
 import type {
   AuthSession,
+  ModelListResponse,
   TaskArchivePreviewPage,
   TaskDetail,
   TaskDownloadLink,
   TaskListResponse,
+  TaskStatus,
   UploadPurpose,
   UploadedFileRef,
   UserListResponse,
@@ -140,10 +142,34 @@ export async function getTasks(
     page?: number
     pageSize?: number
     keyword?: string
+    status?: TaskStatus
   },
 ): Promise<TaskListResponse> {
   const payload = await request<TaskListResponse>(
     `/api/v1/tasks${buildQueryString({
+      page: options?.page,
+      pageSize: options?.pageSize,
+      keyword: options?.keyword?.trim() || undefined,
+      status: options?.status,
+    })}`,
+    {
+      token,
+    },
+  )
+
+  return payload
+}
+
+export async function getModels(
+  token: string,
+  options?: {
+    page?: number
+    pageSize?: number
+    keyword?: string
+  },
+): Promise<ModelListResponse> {
+  return request<ModelListResponse>(
+    `/api/v1/models${buildQueryString({
       page: options?.page,
       pageSize: options?.pageSize,
       keyword: options?.keyword?.trim() || undefined,
@@ -152,8 +178,6 @@ export async function getTasks(
       token,
     },
   )
-
-  return payload
 }
 
 export async function createUser(

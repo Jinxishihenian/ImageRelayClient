@@ -1,5 +1,5 @@
 import { Button, Card, Col, Input, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
-import type { TableColumnsType } from 'antd'
+import type { TableColumnsType, TablePaginationConfig, TableProps } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { deleteTask, getTasks, getUsers } from '../api/client'
 import CreateTaskDrawer from '../components/CreateTaskDrawer'
@@ -42,6 +42,42 @@ const taskStatusTagStyleMap: Record<TaskStatus, { background: string; color: str
   },
 }
 
+const taskStatusFilterOptions: Array<{ text: string; value: TaskStatus }> = [
+  {
+    text: '待清洗',
+    value: 'pending_clean',
+  },
+  {
+    text: '待标注',
+    value: 'pending_annotate',
+  },
+  {
+    text: '待训练',
+    value: 'pending_train',
+  },
+  {
+    text: '已完成',
+    value: 'finished',
+  },
+]
+
+type TaskTableFilters = Parameters<NonNullable<TableProps<TaskSummary>['onChange']>>[1]
+
+function getSelectedTaskStatus(filters: TaskTableFilters): TaskStatus | null {
+  const nextStatus = filters.status?.[0]
+
+  if (
+    nextStatus === 'pending_clean' ||
+    nextStatus === 'pending_annotate' ||
+    nextStatus === 'pending_train' ||
+    nextStatus === 'finished'
+  ) {
+    return nextStatus
+  }
+
+  return null
+}
+
 function TaskBoardPage() {
   const { Search } = Input
   const { session } = useAuth()
@@ -57,10 +93,16 @@ function TaskBoardPage() {
   const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState<TaskStatus | null>(null)
   const [, startTransition] = useTransition()
 
   const loadTasks = useCallback(
-    async (page: number, keyword: string, options?: { silent?: boolean }) => {
+    async (
+      page: number,
+      keyword: string,
+      status: TaskStatus | null,
+      options?: { silent?: boolean },
+    ) => {
       if (!session) {
         return
       }
@@ -74,6 +116,7 @@ function TaskBoardPage() {
           page,
           pageSize: PAGE_SIZE,
           keyword,
+          status: status ?? undefined,
         })
 
         startTransition(() => {
@@ -111,9 +154,9 @@ function TaskBoardPage() {
 
   useEffect(() => {
     queueMicrotask(() => {
-      void loadTasks(currentPage, searchKeyword)
+      void loadTasks(currentPage, searchKeyword, selectedStatus)
     })
-  }, [currentPage, loadTasks, searchKeyword])
+  }, [currentPage, loadTasks, searchKeyword, selectedStatus])
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -140,8 +183,29 @@ function TaskBoardPage() {
       return
     }
 
-    void loadTasks(1, normalizedKeyword)
-  }, [currentPage, loadTasks, searchKeyword])
+    void loadTasks(1, normalizedKeyword, selectedStatus)
+  }, [currentPage, loadTasks, searchKeyword, selectedStatus])
+
+  const handleTableChange = useCallback(
+    (pagination: TablePaginationConfig, filters: TaskTableFilters) => {
+      const nextStatus = getSelectedTaskStatus(filters)
+      const nextPage = pagination.current ?? 1
+
+      if (nextStatus !== selectedStatus) {
+        setSelectedStatus(nextStatus)
+
+        if (currentPage !== 1) {
+          setCurrentPage(1)
+        }
+        return
+      }
+
+      if (nextPage !== currentPage) {
+        setCurrentPage(nextPage)
+      }
+    },
+    [currentPage, loadTasks, searchKeyword, selectedStatus],
+  )
 
   const handleDeleteTask = useCallback(
     async (taskId: number) => {
@@ -154,14 +218,14 @@ function TaskBoardPage() {
       try {
         await deleteTask(taskId, session.token)
         message.success('任务已删除')
-        await loadTasks(currentPage, searchKeyword, { silent: true })
+        await loadTasks(currentPage, searchKeyword, selectedStatus, { silent: true })
       } catch (error) {
         message.error(error instanceof Error ? error.message : '任务删除失败')
       } finally {
         setDeletingTaskId(null)
       }
     },
-    [currentPage, loadTasks, searchKeyword, session],
+    [currentPage, loadTasks, searchKeyword, selectedStatus, session],
   )
 
   const columns: TableColumnsType<TaskSummary> = [
@@ -181,7 +245,10 @@ function TaskBoardPage() {
     {
       title: '状态',
       dataIndex: 'statusLabel',
-      key: 'statusLabel',
+      key: 'status',
+      filters: taskStatusFilterOptions,
+      filterMultiple: false,
+      filteredValue: selectedStatus ? [selectedStatus] : null,
       render: (_value, record) => (
         <Tag
           bordered={false}
@@ -322,7 +389,7 @@ function TaskBoardPage() {
           <div className="toolbar-copy">
             <Typography.Title level={5}>任务列表</Typography.Title>
             <Typography.Text className="muted-text">
-              按任务名称模糊搜索，结果会同步影响分页和统计。
+              按任务名称模糊搜索，并支持按状态筛选，结果会同步影响分页和统计。
             </Typography.Text>
           </div>
 
@@ -356,14 +423,10 @@ function TaskBoardPage() {
               total: summary.total,
               hideOnSinglePage: true,
               showSizeChanger: false,
-              onChange: (page) => {
-                if (page !== currentPage) {
-                  setCurrentPage(page)
-                }
-              },
             }}
+            onChange={handleTableChange}
             locale={{
-              emptyText: searchKeyword ? '未找到匹配的任务' : '当前暂无任务',
+              emptyText: searchKeyword || selectedStatus ? '未找到匹配的任务' : '当前暂无任务',
             }}
           />
         </div>
@@ -377,7 +440,7 @@ function TaskBoardPage() {
           setSelectedTaskId(null)
         }}
         onTaskChanged={() => {
-          void loadTasks(currentPage, searchKeyword, { silent: true })
+          void loadTasks(currentPage, searchKeyword, selectedStatus, { silent: true })
         }}
       />
 
@@ -389,7 +452,7 @@ function TaskBoardPage() {
         }}
         onCreated={() => {
           if (currentPage === 1) {
-            void loadTasks(1, searchKeyword, { silent: true })
+            void loadTasks(1, searchKeyword, selectedStatus, { silent: true })
             return
           }
 

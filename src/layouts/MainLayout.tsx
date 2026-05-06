@@ -11,12 +11,12 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import type { UserRole } from '../types/models'
 
-const roleLabels = {
+const roleLabels: Record<UserRole, string> = {
   admin: '管理员',
-  cleaner: '数据清洗者',
-  annotator: '数据标注者',
-  trainer: '模型训练者',
-} as const
+  cleaner: '数据清洗员',
+  annotator: '数据标注员',
+  trainer: '模型训练员',
+}
 
 const roleTagColors: Record<UserRole, string> = {
   admin: '#FFF7E8',
@@ -40,6 +40,10 @@ function getMenuItems(isAdmin: boolean): MenuProps['items'] {
     },
     ...(isAdmin
       ? [
+          {
+            key: '/models',
+            label: '模型列表',
+          },
           {
             key: '/users',
             label: '用户管理',
@@ -135,7 +139,6 @@ function MainLayout() {
                     {roleLabels[session.user.role]}
                   </Tag>
                 </div>
-
               </div>
 
               <Button onClick={logout} className="logout-button">

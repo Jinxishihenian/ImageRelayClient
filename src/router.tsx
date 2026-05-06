@@ -4,6 +4,7 @@ import RequireAdmin from './components/RequireAdmin.tsx'
 import RequireAuth from './components/RequireAuth.tsx'
 import MainLayout from './layouts/MainLayout.tsx'
 import LoginPage from './pages/LoginPage.tsx'
+import ModelListPage from './pages/ModelListPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
 import TaskBoardPage from './pages/TaskBoardPage.tsx'
 import UserListPage from './pages/UserListPage.tsx'
@@ -38,6 +39,10 @@ export const router = createBrowserRouter([
               {
                 element: <RequireAdmin />,
                 children: [
+                  {
+                    path: 'models',
+                    element: <ModelListPage />,
+                  },
                   {
                     path: 'users',
                     element: <UserListPage />,

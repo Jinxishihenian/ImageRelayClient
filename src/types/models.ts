@@ -49,6 +49,29 @@ export type UserListResponse = {
   summary: UserListSummary
 }
 
+export type ModelListItem = {
+  taskId: number
+  taskTitle: string
+  modelFileName: string
+  trainerRemark: string | null
+  finishedAt: string
+  trainer: {
+    id: number
+    username: string
+  }
+  download: {
+    alias: 'model'
+    label: string
+    fileName: string
+    endpoint: string
+  }
+}
+
+export type ModelListResponse = {
+  items: ModelListItem[]
+  pagination: PaginationMeta
+}
+
 export type TaskAssignee = {
   id: number
   username: string
