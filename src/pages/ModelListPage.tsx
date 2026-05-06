@@ -152,7 +152,6 @@ function ModelListPage() {
                 try {
                   await downloadTaskFile(
                     record.download.endpoint,
-                    record.download.fileName,
                     session.token,
                   )
                 } catch (error) {

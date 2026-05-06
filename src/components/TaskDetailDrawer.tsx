@@ -282,7 +282,6 @@ function TaskDetailDrawer({
 
                           void downloadTaskFile(
                             item.endpoint,
-                            item.fileName,
                             session.token,
                           ).catch((error) => {
                             message.error(

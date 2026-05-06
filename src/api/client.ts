@@ -374,33 +374,17 @@ export async function uploadBinaryFile(
 
 export async function downloadTaskFile(
   endpoint: string,
-  fileName: string,
   token: string,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
-  if (!response.ok) {
-    const payload = await parseJsonSafely<ApiErrorPayload>(response)
-    throw new ApiError(
-      payload?.error?.message || `下载失败，状态码 ${response.status}`,
-      response.status,
-    )
-  }
-
-  const blob = await response.blob()
-  const url = URL.createObjectURL(blob)
+  // 大文件下载不能走 fetch + blob；这里改为申请临时签名链接后交给浏览器原生下载器处理。
+  const { url } = await getTaskFileDownloadLink(`${endpoint}-link`, token)
   const anchor = document.createElement('a')
 
   anchor.href = url
-  anchor.download = fileName
+  anchor.rel = 'noopener'
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()
-  URL.revokeObjectURL(url)
 }
 
 export async function getTaskFileDownloadLink(
