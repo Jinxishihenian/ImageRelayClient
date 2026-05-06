@@ -20,6 +20,14 @@ type ApiErrorPayload = {
   }
 }
 
+export type ChunkUploadSession = {
+  uploadId: string
+  tusEndpoint: string
+  uploadUrl: string
+  createUrl: string
+  expiresAt: string
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
 function buildQueryString(
@@ -277,6 +285,45 @@ export async function completeTaskStage(
   return response.item
 }
 
+export async function createChunkUploadSession(
+  file: File,
+  token: string,
+  options?: {
+    purpose?: UploadPurpose
+  },
+): Promise<ChunkUploadSession> {
+  const response = await request<{ item: ChunkUploadSession }>('/api/v1/files/uploads', {
+    method: 'POST',
+    token,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      originalName: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      size: file.size,
+      purpose: options?.purpose,
+    }),
+  })
+
+  return response.item
+}
+
+export async function finalizeChunkUpload(
+  uploadId: string,
+  token: string,
+): Promise<UploadedFileRef> {
+  const response = await request<{ item: UploadedFileRef }>(
+    `/api/v1/files/uploads/${uploadId}/complete`,
+    {
+      method: 'POST',
+      token,
+    },
+  )
+
+  return response.item
+}
+
 export async function uploadBinaryFile(
   file: File,
   token: string,
@@ -284,20 +331,18 @@ export async function uploadBinaryFile(
     purpose?: UploadPurpose
   },
 ): Promise<UploadedFileRef> {
-  const headers: Record<string, string> = {
-    'Content-Type': file.type || 'application/octet-stream',
-    'X-File-Name': encodeURIComponent(file.name),
-  }
+  const formData = new FormData()
+  formData.append('file', file, file.name)
+  formData.append('originalName', file.name)
 
   if (options?.purpose) {
-    headers['X-Upload-Purpose'] = options.purpose
+    formData.append('purpose', options.purpose)
   }
 
   const response = await request<{ item: UploadedFileRef }>('/api/v1/files/upload', {
     method: 'POST',
     token,
-    headers,
-    body: await file.arrayBuffer(),
+    body: formData,
   })
 
   return response.item

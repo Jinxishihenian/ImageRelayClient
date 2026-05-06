@@ -1,6 +1,7 @@
-import { Button, Card, Spin, Typography, message } from 'antd'
-import { useRef, useState } from 'react'
-import { uploadBinaryFile } from '../api/client'
+import { Button, Card, Progress, Spin, Typography, message } from 'antd'
+import { Uppy, Tus } from 'uppy'
+import { useEffect, useRef, useState } from 'react'
+import { finalizeChunkUpload } from '../api/client'
 import type { UploadedFileRef, UploadPurpose } from '../types/models'
 
 type FileUploadFieldProps = {
@@ -12,6 +13,15 @@ type FileUploadFieldProps = {
   acceptedExtensions?: string[]
   fileTypeHint?: string
   uploadPurpose?: UploadPurpose
+}
+
+type UploadState = {
+  fileName: string
+  progress: number
+}
+
+type UppyUploadSuccessResponse = {
+  uploadURL?: string
 }
 
 function normalizeExtension(extension: string) {
@@ -50,6 +60,18 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function extractUploadIdFromUrl(uploadUrl: string) {
+  try {
+    const normalizedUrl = uploadUrl.startsWith('http')
+      ? new URL(uploadUrl)
+      : new URL(uploadUrl, window.location.origin)
+    const segments = normalizedUrl.pathname.split('/').filter(Boolean)
+    return segments.at(-1) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 function FileUploadField({
   label,
   token,
@@ -61,7 +83,9 @@ function FileUploadField({
   uploadPurpose,
 }: FileUploadFieldProps) {
   const [uploading, setUploading] = useState(false)
+  const [uploadState, setUploadState] = useState<UploadState | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const uppyRef = useRef<any>(null)
   const normalizedAcceptedExtensions = (acceptedExtensions ?? [])
     .map(normalizeExtension)
     .filter(Boolean)
@@ -69,6 +93,14 @@ function FileUploadField({
     normalizedAcceptedExtensions.length > 0
       ? normalizedAcceptedExtensions.join(',')
       : undefined
+
+  useEffect(() => {
+    return () => {
+      void uppyRef.current?.cancelAll()
+      uppyRef.current?.destroy()
+      uppyRef.current = null
+    }
+  }, [])
 
   return (
     <Card size="small" className="panel-card">
@@ -97,6 +129,14 @@ function FileUploadField({
               尚未上传文件
             </Typography.Text>
           )}
+          {uploadState ? (
+            <div style={{ marginTop: 12 }}>
+              <Typography.Paragraph className="muted-paragraph compact">
+                正在上传：{uploadState.fileName}
+              </Typography.Paragraph>
+              <Progress percent={Math.round(uploadState.progress)} size="small" />
+            </div>
+          ) : null}
         </div>
 
         <div className="upload-actions">
@@ -127,21 +167,110 @@ function FileUploadField({
               }
 
               setUploading(true)
+              setUploadState({
+                fileName: file.name,
+                progress: 0,
+              })
 
-              try {
-                const uploaded = await uploadBinaryFile(file, token, {
-                  purpose: uploadPurpose,
-                })
-                onChange(uploaded)
-                message.success(`${file.name} 上传成功`)
-              } catch (error) {
-                message.error(
-                  error instanceof Error ? error.message : '文件上传失败',
+              const currentUppy = new Uppy({
+                autoProceed: true,
+                restrictions: {
+                  maxNumberOfFiles: 1,
+                },
+              }) as any
+
+              uppyRef.current?.destroy()
+              uppyRef.current = currentUppy
+
+              currentUppy.use(Tus, {
+                endpoint: '/api/v1/files/tus',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                chunkSize: 5 * 1024 * 1024,
+                retryDelays: [0, 1000, 3000, 5000],
+                allowedMetaFields: ['originalName', 'mimeType', 'purpose'],
+              })
+
+              currentUppy.on('upload-progress', (_uppyFile: unknown, progress: {
+                bytesUploaded: number
+                bytesTotal: number | null
+              }) => {
+                setUploadState((current) =>
+                  current
+                    ? (() => {
+                        const bytesTotal = progress.bytesTotal ?? 0
+
+                        return {
+                          ...current,
+                          progress:
+                            bytesTotal > 0
+                              ? (progress.bytesUploaded / bytesTotal) * 100
+                              : 0,
+                        }
+                      })()
+                    : current,
                 )
-              } finally {
+              })
+
+              currentUppy.on(
+                'upload-success',
+                async (
+                  _file: unknown,
+                  response: UppyUploadSuccessResponse,
+                ) => {
+                  try {
+                    const uploadId = response.uploadURL
+                      ? extractUploadIdFromUrl(response.uploadURL)
+                      : ''
+
+                    if (!uploadId) {
+                      throw new Error('上传成功，但未能识别上传会话标识。')
+                    }
+
+                    const uploaded = await finalizeChunkUpload(uploadId, token)
+                    onChange(uploaded)
+                    message.success(`${file.name} 上传成功`)
+                  } catch (error) {
+                    message.error(
+                      error instanceof Error ? error.message : '文件上传完成确认失败',
+                    )
+                  } finally {
+                    setUploading(false)
+                    setUploadState(null)
+                    event.target.value = ''
+                    currentUppy.destroy()
+                    if (uppyRef.current === currentUppy) {
+                      uppyRef.current = null
+                    }
+                  }
+                },
+              )
+
+              currentUppy.on('error', (error: unknown) => {
+                message.error(error instanceof Error ? error.message : '文件上传失败')
                 setUploading(false)
+                setUploadState(null)
                 event.target.value = ''
-              }
+              })
+
+              currentUppy.on('upload-error', (_file: unknown, error: unknown) => {
+                message.error(error instanceof Error ? error.message : '文件上传失败')
+                setUploading(false)
+                setUploadState(null)
+                event.target.value = ''
+              })
+
+              currentUppy.addFile({
+                name: file.name,
+                type: file.type,
+                data: file,
+                meta: {
+                  originalName: file.name,
+                  mimeType: file.type || 'application/octet-stream',
+                  purpose: uploadPurpose ?? '',
+                },
+              })
             }}
           />
 

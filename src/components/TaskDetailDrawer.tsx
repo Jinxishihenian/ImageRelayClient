@@ -58,14 +58,16 @@ function getStageUploadRule(role: UserRole | null) {
     return {
       acceptedExtensions: ARCHIVE_EXTENSIONS,
       fileTypeHint: ARCHIVE_FILE_HINT,
-      description: '文件会先上传到临时区，点击完成后再正式挂到任务记录。当前阶段仅支持压缩包格式。',
+      description:
+        '文件会先上传到临时区，点击完成后再正式挂到任务记录。当前阶段仅支持压缩包格式。',
     }
   }
 
   return {
     acceptedExtensions: undefined,
     fileTypeHint: '模型文件类型不限',
-    description: '文件会先上传到临时区，点击完成后再正式挂到任务记录。当前阶段可上传任意模型结果文件。',
+    description:
+      '文件会先上传到临时区，点击完成后再正式挂到任务记录。当前阶段可上传任意模型结果文件。',
   }
 }
 
@@ -136,7 +138,7 @@ function TaskDetailDrawer({
         .finally(() => {
           setLoading(false)
         })
-      })
+    })
   }, [open, session, startTransition, taskId])
 
   return (
