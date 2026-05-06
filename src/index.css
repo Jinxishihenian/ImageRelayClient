@@ -178,7 +178,7 @@ h6 {
 
 .header-copy {
   display: grid;
-  gap: var(--spacing-xs);
+  gap: 0;
   max-width: 620px;
 }
 
@@ -241,14 +241,6 @@ h6 {
   font-weight: 500;
 }
 
-.user-meta-line {
-  display: block;
-}
-
-.user-meta-subline {
-  font-size: 12px;
-}
-
 .logout-button.ant-btn {
   flex: none;
   border-color: var(--color-border-base);
@@ -265,6 +257,7 @@ h6 {
   flex: 1;
   min-height: 0;
   padding: 28px;
+  background: #f7fafc;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -390,12 +383,6 @@ h6 {
   margin: 6px 0 0;
   font-size: 28px;
   line-height: 1.1;
-}
-
-.metric-caption {
-  margin-top: var(--spacing-sm);
-  font-size: 12px;
-  color: var(--color-text-tertiary);
 }
 
 .page-table-card.ant-card {
@@ -647,60 +634,8 @@ h6 {
 }
 
 .login-wrap {
-  width: min(1120px, 100%);
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 420px);
-  gap: 24px;
-  align-items: stretch;
-}
-
-.login-copy {
-  padding: 28px;
-  border: 1px solid rgba(22, 119, 255, 0.08);
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top left, rgba(22, 119, 255, 0.14), transparent 36%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 255, 0.94));
-  box-shadow: 0 18px 32px rgba(22, 119, 255, 0.06);
-}
-
-.login-title.ant-typography {
-  margin: 10px 0 16px;
-  font-size: clamp(36px, 5vw, 56px);
-  line-height: 1.08;
-}
-
-.login-points {
-  margin: 24px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: var(--spacing-md);
-}
-
-.login-points li {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: flex-start;
-}
-
-.login-point-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 600;
-  flex: none;
-}
-
-.login-point-copy {
-  display: grid;
-  gap: 2px;
+  width: min(420px, 100%);
+  display: block;
 }
 
 .login-card.ant-card {
@@ -710,7 +645,7 @@ h6 {
 
 .login-card-header {
   display: grid;
-  gap: var(--spacing-xs);
+  gap: 0;
   margin-bottom: var(--spacing-lg);
 }
 
@@ -790,10 +725,6 @@ h6 {
 }
 
 @media (max-width: 960px) {
-  .login-wrap {
-    grid-template-columns: 1fr;
-  }
-
   .page-header {
     flex-direction: column;
   }

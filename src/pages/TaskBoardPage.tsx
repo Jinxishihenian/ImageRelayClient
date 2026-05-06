@@ -264,17 +264,14 @@ function TaskBoardPage() {
     {
       label: '总任务数',
       value: summary.total,
-      caption: '当前可见任务范围内的全部任务总量',
     },
     {
       label: '待我处理',
       value: summary.actionableCount,
-      caption: '按你的角色进入当前可提交阶段的任务数量',
     },
     {
       label: '已完成',
       value: summary.finishedCount,
-      caption: '当前可见任务范围内已完成交接的任务数量',
     },
   ]
 
@@ -292,11 +289,6 @@ function TaskBoardPage() {
           <Typography.Title level={2} className="page-title">
             任务工作台
           </Typography.Title>
-          <Typography.Paragraph className="muted-paragraph">
-            {session.user.role === 'admin'
-              ? '创建任务、分配执行人，并查看整个任务链路的文件与备注。'
-              : '查看分配给你的任务，下载当前所需文件并按固定阶段提交结果。'}
-          </Typography.Paragraph>
         </div>
 
         {session.user.role === 'admin' ? (
@@ -320,9 +312,6 @@ function TaskBoardPage() {
             <Card className="panel-card metric-card task-metric-card">
               <Typography.Text className="muted-text">{metric.label}</Typography.Text>
               <Typography.Title level={3}>{metric.value}</Typography.Title>
-              <Typography.Text className="metric-caption">
-                {metric.caption}
-              </Typography.Text>
             </Card>
           </Col>
         ))}

@@ -19,48 +19,6 @@ function LoginPage() {
   return (
     <main className="login-screen">
       <section className="login-wrap">
-        <div className="login-copy">
-          <Typography.Text className="section-eyebrow">
-            Image Relay MVP
-          </Typography.Text>
-          <Typography.Title className="login-title">
-            资源中转管理平台
-          </Typography.Title>
-          <Typography.Paragraph className="muted-paragraph">
-            使用数据库预置账号登录后，按固定角色完成任务创建、文件交接和阶段流转。
-          </Typography.Paragraph>
-
-          <ul className="login-points">
-            <li>
-              <span className="login-point-index">01</span>
-              <div className="login-point-copy">
-                <Typography.Text strong>固定职责链路</Typography.Text>
-                <Typography.Text className="muted-text">
-                  管理员创建任务后，清洗、标注、训练按顺序完成交接。
-                </Typography.Text>
-              </div>
-            </li>
-            <li>
-              <span className="login-point-index">02</span>
-              <div className="login-point-copy">
-                <Typography.Text strong>文件与备注同步沉淀</Typography.Text>
-                <Typography.Text className="muted-text">
-                  每个阶段都记录结果文件和处理说明，便于后续追踪。
-                </Typography.Text>
-              </div>
-            </li>
-            <li>
-              <span className="login-point-index">03</span>
-              <div className="login-point-copy">
-                <Typography.Text strong>最小学习成本</Typography.Text>
-                <Typography.Text className="muted-text">
-                  页面只保留任务流转必需信息，适合快速投入使用。
-                </Typography.Text>
-              </div>
-            </li>
-          </ul>
-        </div>
-
         <Card
           bordered={false}
           className="panel-card login-card"
@@ -68,9 +26,6 @@ function LoginPage() {
         >
           <div className="login-card-header">
             <Typography.Title level={3}>登录系统</Typography.Title>
-            <Typography.Paragraph className="muted-paragraph">
-              输入预置账号后进入任务工作台。
-            </Typography.Paragraph>
           </div>
 
           <div className="login-card-tip">

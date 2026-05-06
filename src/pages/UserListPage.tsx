@@ -251,17 +251,14 @@ function UserListPage() {
     {
       label: '用户总数',
       value: summary.total,
-      caption: '系统内全部可登录账号',
     },
     {
       label: '管理员',
       value: summary.adminCount,
-      caption: '具备用户和任务全局管理权限',
     },
     {
       label: '执行角色用户',
       value: summary.workerCount,
-      caption: '承担清洗、标注、训练三类执行职责',
     },
   ]
 
@@ -279,9 +276,6 @@ function UserListPage() {
           <Typography.Title level={2} className="page-title">
             用户管理
           </Typography.Title>
-          <Typography.Paragraph className="muted-paragraph">
-            仅管理员可见。支持用户增删改查，创建时分配固定角色，编辑时不允许修改角色。
-          </Typography.Paragraph>
         </div>
 
         <div className="page-actions">
@@ -303,9 +297,6 @@ function UserListPage() {
             <Card className="panel-card metric-card task-metric-card">
               <Typography.Text className="muted-text">{metric.label}</Typography.Text>
               <Typography.Title level={3}>{metric.value}</Typography.Title>
-              <Typography.Text className="metric-caption">
-                {metric.caption}
-              </Typography.Text>
             </Card>
           </Col>
         ))}

@@ -32,28 +32,6 @@ const roleTagTextColors: Record<UserRole, string> = {
   trainer: '#F53F3F',
 }
 
-function formatCreatedAt(createdAt: string) {
-  const date = new Date(createdAt)
-
-  if (Number.isNaN(date.getTime())) {
-    return '未知'
-  }
-
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date)
-}
-
-function getUserHint(role: UserRole) {
-  if (role === 'admin') {
-    return '当前账号可管理用户、查看任务流并维护整体流程。'
-  }
-
-  return '当前账号可继续处理自己所负责阶段的任务交接。'
-}
-
 function getMenuItems(isAdmin: boolean): MenuProps['items'] {
   return [
     {
@@ -135,9 +113,6 @@ function MainLayout() {
             <Typography.Title level={4} className="header-title">
               资源中转管理平台
             </Typography.Title>
-            <Typography.Text className="muted-text">
-              固定角色、固定阶段、固定任务交接链路
-            </Typography.Text>
           </div>
 
           <div className="header-actions">
@@ -161,12 +136,6 @@ function MainLayout() {
                   </Tag>
                 </div>
 
-                <Typography.Text className="muted-text user-meta-line">
-                  {getUserHint(session.user.role)}
-                </Typography.Text>
-                <Typography.Text className="muted-text user-meta-line user-meta-subline">
-                  账号创建于 {formatCreatedAt(session.user.createdAt)}
-                </Typography.Text>
               </div>
 
               <Button onClick={logout} className="logout-button">
