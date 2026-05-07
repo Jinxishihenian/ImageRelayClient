@@ -267,7 +267,8 @@ h6 {
   width: 100%;
   flex: 1;
   min-height: 0;
-  max-width: 1380px;
+  /* 放宽桌面端主内容区，减少表格页在大屏下的横向压缩。 */
+  max-width: 1600px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;

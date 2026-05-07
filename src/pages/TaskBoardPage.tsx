@@ -6,7 +6,13 @@ import CreateTaskDrawer from '../components/CreateTaskDrawer'
 import TaskDetailDrawer from '../components/TaskDetailDrawer'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
-import type { TaskFlowMode, TaskListSummary, TaskStatus, TaskSummary, UserSummary } from '../types/models'
+import type {
+  TaskFlowMode,
+  TaskListSummary,
+  TaskStatus,
+  TaskSummary,
+  UserSummary,
+} from '../types/models'
 
 const PAGE_SIZE = 10
 
@@ -42,7 +48,10 @@ const taskStatusTagStyleMap: Record<TaskStatus, { background: string; color: str
   },
 }
 
-const taskStatusFilterOptions: Array<{ text: string; value: TaskStatus }> = [
+// “复核”是列表筛选用的业务态，不并入任务主状态枚举。
+type TaskListStatusFilter = TaskStatus | 'pending_admin_review'
+
+const taskStatusFilterOptions: Array<{ text: string; value: TaskListStatusFilter }> = [
   {
     text: '待清洗',
     value: 'pending_clean',
@@ -54,6 +63,10 @@ const taskStatusFilterOptions: Array<{ text: string; value: TaskStatus }> = [
   {
     text: '待训练',
     value: 'pending_train',
+  },
+  {
+    text: '复核',
+    value: 'pending_admin_review',
   },
   {
     text: '已完成',
@@ -74,19 +87,29 @@ const flowModeTagStyleMap: Record<TaskFlowMode, { background: string; color: str
 
 type TaskTableFilters = Parameters<NonNullable<TableProps<TaskSummary>['onChange']>>[1]
 
-function getSelectedTaskStatus(filters: TaskTableFilters): TaskStatus | null {
+function getSelectedTaskStatus(filters: TaskTableFilters): TaskListStatusFilter | null {
   const nextStatus = filters.status?.[0]
 
   if (
     nextStatus === 'pending_clean' ||
     nextStatus === 'pending_annotate' ||
     nextStatus === 'pending_train' ||
+    nextStatus === 'pending_admin_review' ||
     nextStatus === 'finished'
   ) {
     return nextStatus
   }
 
   return null
+}
+
+function isTaskStatus(value: TaskListStatusFilter | null): value is TaskStatus {
+  return (
+    value === 'pending_clean' ||
+    value === 'pending_annotate' ||
+    value === 'pending_train' ||
+    value === 'finished'
+  )
 }
 
 function TaskBoardPage() {
@@ -104,14 +127,14 @@ function TaskBoardPage() {
   const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null)
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState<TaskStatus | null>(null)
+  const [selectedStatus, setSelectedStatus] = useState<TaskListStatusFilter | null>(null)
   const [, startTransition] = useTransition()
 
   const loadTasks = useCallback(
     async (
       page: number,
       keyword: string,
-      status: TaskStatus | null,
+      status: TaskListStatusFilter | null,
       options?: { silent?: boolean },
     ) => {
       if (!session) {
@@ -127,7 +150,9 @@ function TaskBoardPage() {
           page,
           pageSize: PAGE_SIZE,
           keyword,
-          status: status ?? undefined,
+          // “复核”来自 review_status，而不是主状态 status。
+          status: isTaskStatus(status) ? status : undefined,
+          reviewStatus: status === 'pending_admin_review' ? 'pending_admin_review' : undefined,
         })
 
         startTransition(() => {

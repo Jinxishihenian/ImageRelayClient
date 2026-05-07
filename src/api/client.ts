@@ -6,6 +6,7 @@ import type {
   TaskDownloadLink,
   TaskFlowMode,
   TaskListResponse,
+  TaskReviewStatus,
   TaskReviewStage,
   TaskStatus,
   UploadPurpose,
@@ -155,6 +156,7 @@ export async function getTasks(
     pageSize?: number
     keyword?: string
     status?: TaskStatus
+    reviewStatus?: TaskReviewStatus
     flowMode?: TaskFlowMode
   },
 ): Promise<TaskListResponse> {
@@ -164,6 +166,7 @@ export async function getTasks(
       pageSize: options?.pageSize,
       keyword: options?.keyword?.trim() || undefined,
       status: options?.status,
+      reviewStatus: options?.reviewStatus,
       flowMode: options?.flowMode,
     })}`,
     {
