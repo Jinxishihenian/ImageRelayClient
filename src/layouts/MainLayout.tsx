@@ -94,9 +94,12 @@ function MainLayout() {
             <Typography.Text className="section-eyebrow">
               Image Relay
             </Typography.Text>
-            <Typography.Title level={4} className="brand-title">
+            <h2>
               任务流转台
-            </Typography.Title>
+            </h2>
+            {/*<Typography.Title level={4} className="brand-title">*/}
+            {/*  任务流转台*/}
+            {/*</Typography.Title>*/}
           </div>
         </div>
 

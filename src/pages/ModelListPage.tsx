@@ -183,9 +183,6 @@ function ModelListPage() {
           <Typography.Title level={2} className="page-title">
             模型列表
           </Typography.Title>
-          <Typography.Text className="muted-text">
-            仅展示任务已完成且已生成模型结果文件的记录，支持按任务名称和模型文件名模糊搜索。
-          </Typography.Text>
         </div>
       </section>
 
