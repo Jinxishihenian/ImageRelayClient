@@ -7,6 +7,7 @@ import {
   Typography,
   type MenuProps,
 } from 'antd'
+import { Boxes, LayoutDashboard, Users, type LucideIcon } from 'lucide-react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import type { UserRole } from '../types/models'
@@ -32,21 +33,28 @@ const roleTagTextColors: Record<UserRole, string> = {
   trainer: '#F53F3F',
 }
 
+function renderMenuIcon(Icon: LucideIcon) {
+  return <Icon size={17} strokeWidth={1.9} className="app-menu-icon" aria-hidden="true" />
+}
+
 function getMenuItems(isAdmin: boolean): MenuProps['items'] {
   return [
     {
       key: '/tasks',
       label: '任务工作台',
+      icon: renderMenuIcon(LayoutDashboard),
     },
     ...(isAdmin
       ? [
           {
             key: '/models',
             label: '模型列表',
+            icon: renderMenuIcon(Boxes),
           },
           {
             key: '/users',
             label: '用户管理',
+            icon: renderMenuIcon(Users),
           },
         ]
       : []),

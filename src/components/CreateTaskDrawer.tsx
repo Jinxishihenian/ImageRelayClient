@@ -1,9 +1,9 @@
 import {
+  Checkbox,
   Button,
   Drawer,
   Form,
   Input,
-  Radio,
   Select,
   Space,
   Typography,
@@ -14,7 +14,6 @@ import { createTask } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import type {
   TaskDetail,
-  TaskFlowMode,
   UploadedFileRef,
   UserRole,
   UserSummary,
@@ -31,7 +30,7 @@ type CreateTaskDrawerProps = {
 type CreateTaskFormValues = {
   title: string
   description: string
-  flowMode: TaskFlowMode
+  approvalStages: Array<'clean' | 'annotate' | 'train'>
   cleanerId: number
   annotatorId: number
   trainerId: number
@@ -87,7 +86,7 @@ function CreateTaskDrawer({
       }
     >
       <Typography.Paragraph className="drawer-helper">
-        管理员创建任务时需要上传初始文件、选择流转模式，并为三类执行人分别指定负责人。
+        管理员创建任务时需要上传初始文件、配置审批流程控制，并为三类执行人分别指定负责人。
         标注者当前固定为单人。初始文件仅支持 {ARCHIVE_FILE_HINT}。
       </Typography.Paragraph>
 
@@ -105,7 +104,14 @@ function CreateTaskDrawer({
           try {
             const task = await createTask(
               {
-                ...values,
+                title: values.title,
+                description: values.description,
+                needCleanReview: values.approvalStages.includes('clean'),
+                needAnnotateReview: values.approvalStages.includes('annotate'),
+                needTrainReview: values.approvalStages.includes('train'),
+                cleanerId: values.cleanerId,
+                annotatorId: values.annotatorId,
+                trainerId: values.trainerId,
                 sourceFile,
               },
               session.token,
@@ -136,16 +142,12 @@ function CreateTaskDrawer({
           />
         </Form.Item>
 
-        <Form.Item
-          label="任务流转模式"
-          name="flowMode"
-          initialValue="auto"
-          rules={[{ required: true, message: '请选择任务流转模式' }]}
-        >
-          <Radio.Group
+        <Form.Item label="审批流程控制" name="approvalStages" initialValue={[]}>
+          <Checkbox.Group
             options={[
-              { label: '自动流转', value: 'auto' },
-              { label: '手动流转', value: 'manual' },
+              { label: '数据清洗', value: 'clean' },
+              { label: '数据标注', value: 'annotate' },
+              { label: '模型训练', value: 'train' },
             ]}
           />
         </Form.Item>

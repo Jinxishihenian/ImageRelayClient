@@ -4,7 +4,6 @@ import type {
   TaskArchivePreviewPage,
   TaskDetail,
   TaskDownloadLink,
-  TaskFlowMode,
   TaskListResponse,
   TaskReviewStatus,
   TaskReviewStage,
@@ -157,7 +156,6 @@ export async function getTasks(
     keyword?: string
     status?: TaskStatus
     reviewStatus?: TaskReviewStatus
-    flowMode?: TaskFlowMode
   },
 ): Promise<TaskListResponse> {
   const payload = await request<TaskListResponse>(
@@ -167,7 +165,6 @@ export async function getTasks(
       keyword: options?.keyword?.trim() || undefined,
       status: options?.status,
       reviewStatus: options?.reviewStatus,
-      flowMode: options?.flowMode,
     })}`,
     {
       token,
@@ -267,7 +264,9 @@ export async function createTask(
   payload: {
     title: string
     description: string
-    flowMode: TaskFlowMode
+    needCleanReview: boolean
+    needAnnotateReview: boolean
+    needTrainReview: boolean
     cleanerId: number
     annotatorId: number
     trainerId: number

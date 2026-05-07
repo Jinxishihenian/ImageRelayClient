@@ -143,6 +143,24 @@ h6 {
   transition: all 0.2s ease;
 }
 
+.app-menu .ant-menu-title-content {
+  display: inline-flex;
+  align-items: center;
+}
+
+.app-menu .ant-menu-item .ant-menu-item-icon,
+.app-menu .ant-menu-submenu-title .ant-menu-item-icon {
+  width: 18px;
+  min-width: 18px;
+  margin-inline-end: 12px;
+  color: currentColor;
+}
+
+.app-menu-icon {
+  display: block;
+  color: currentColor;
+}
+
 .app-menu .ant-menu-item:hover,
 .app-menu .ant-menu-submenu-title:hover {
   color: var(--color-primary);

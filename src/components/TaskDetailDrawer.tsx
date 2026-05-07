@@ -99,11 +99,29 @@ function getTaskStatusTagStyle(canHandle: boolean) {
 }
 
 function getSubmitCardDescription(task: TaskDetail) {
-  if (task.flowMode === 'manual') {
+  if (task.currentStageNeedsReview) {
     return '上传当前阶段产物并填写备注后，任务会进入等待管理员复核；若审核未通过，可在当前阶段重新提交。'
   }
 
   return '上传当前阶段产物并填写备注后，任务会自动流转到下一阶段。'
+}
+
+function getApprovalStageLabels(task: TaskDetail) {
+  const labels: string[] = []
+
+  if (task.needCleanReview) {
+    labels.push('数据清洗')
+  }
+
+  if (task.needAnnotateReview) {
+    labels.push('数据标注')
+  }
+
+  if (task.needTrainReview) {
+    labels.push('模型训练')
+  }
+
+  return labels.length > 0 ? labels.join('、') : '无'
 }
 
 function TaskDetailDrawer({
@@ -199,14 +217,14 @@ function TaskDetailDrawer({
                 })(),
               },
               {
-                key: 'flowMode',
-                label: '流转模式',
-                children: task.flowModeLabel,
+                key: 'approvalStages',
+                label: '审批流程控制',
+                children: getApprovalStageLabels(task),
               },
               {
                 key: 'reviewStatus',
                 label: '审核状态',
-                children: task.flowMode === 'manual' ? task.reviewStatusLabel : '不适用',
+                children: task.currentStageNeedsReview ? task.reviewStatusLabel : '不适用',
               },
               {
                 key: 'description',
@@ -327,7 +345,7 @@ function TaskDetailDrawer({
             )}
           </Card>
 
-          {task.flowMode === 'manual' && task.reviewComment ? (
+          {task.currentStageNeedsReview && task.reviewComment ? (
             <Alert
               type={task.reviewStatus === 'rejected' ? 'error' : 'info'}
               showIcon
@@ -430,7 +448,7 @@ function TaskDetailDrawer({
                         setRemark('')
                         setUploadedFile(null)
                         message.success(
-                          task.flowMode === 'manual' ? '任务阶段已提交，等待管理员复核' : '任务阶段已提交',
+                          task.currentStageNeedsReview ? '任务阶段已提交，等待管理员复核' : '任务阶段已提交',
                         )
                         onTaskChanged()
                       })
@@ -457,7 +475,7 @@ function TaskDetailDrawer({
                   type="warning"
                   showIcon
                   message={`待复核内容：${task.reviewStageLabel ?? task.reviewActionLabel ?? '当前阶段结果'}`}
-                  description="当前任务采用手动流转模式。管理员审核通过后才会继续流转；驳回后由当前阶段负责人根据审核意见重新提交。"
+                  description="当前阶段已开启审批。管理员审核通过后才会继续流转；驳回后由当前阶段负责人根据审核意见重新提交。"
                 />
 
                 <div>

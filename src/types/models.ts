@@ -4,7 +4,6 @@ export type TaskStatus =
   | 'pending_annotate'
   | 'pending_train'
   | 'finished'
-export type TaskFlowMode = 'auto' | 'manual'
 export type TaskReviewStatus = 'none' | 'pending_admin_review' | 'rejected'
 export type TaskReviewStage = 'clean' | 'annotate' | 'train'
 
@@ -86,8 +85,11 @@ export type TaskSummary = {
   description: string
   status: TaskStatus
   statusLabel: string
-  flowMode: TaskFlowMode
-  flowModeLabel: string
+  needCleanReview: boolean
+  needAnnotateReview: boolean
+  needTrainReview: boolean
+  approvalStages: TaskReviewStage[]
+  currentStageNeedsReview: boolean
   reviewStatus: TaskReviewStatus
   reviewStatusLabel: string
   reviewStage: TaskReviewStage | null

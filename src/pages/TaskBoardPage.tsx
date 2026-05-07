@@ -7,7 +7,6 @@ import TaskDetailDrawer from '../components/TaskDetailDrawer'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
 import type {
-  TaskFlowMode,
   TaskListSummary,
   TaskStatus,
   TaskSummary,
@@ -74,15 +73,22 @@ const taskStatusFilterOptions: Array<{ text: string; value: TaskListStatusFilter
   },
 ]
 
-const flowModeTagStyleMap: Record<TaskFlowMode, { background: string; color: string }> = {
-  auto: {
-    background: '#F6FFED',
-    color: '#389E0D',
-  },
-  manual: {
-    background: '#FFF1F0',
-    color: '#CF1322',
-  },
+function getApprovalTags(record: TaskSummary) {
+  const tags: Array<{ label: string; background: string; color: string }> = []
+
+  if (record.needCleanReview) {
+    tags.push({ label: '清洗', background: '#FFF7E8', color: '#D46B08' })
+  }
+
+  if (record.needAnnotateReview) {
+    tags.push({ label: '标注', background: '#E6F4FF', color: '#1677FF' })
+  }
+
+  if (record.needTrainReview) {
+    tags.push({ label: '训练', background: '#F6FFED', color: '#389E0D' })
+  }
+
+  return tags
 }
 
 type TaskTableFilters = Parameters<NonNullable<TableProps<TaskSummary>['onChange']>>[1]
@@ -297,26 +303,39 @@ function TaskBoardPage() {
       ),
     },
     {
-      title: '流转模式',
-      key: 'flowMode',
-      width: 120,
-      render: (_value, record) => (
-        <Tag
-          bordered={false}
-          className="status-tag"
-          color={flowModeTagStyleMap[record.flowMode].background}
-          style={{ color: flowModeTagStyleMap[record.flowMode].color }}
-        >
-          {record.flowModeLabel}
-        </Tag>
-      ),
+      title: '审批流程控制',
+      key: 'approvalStages',
+      width: 220,
+      render: (_value, record) => {
+        const tags = getApprovalTags(record)
+
+        if (tags.length === 0) {
+          return <Typography.Text className="muted-text">无</Typography.Text>
+        }
+
+        return (
+          <Space size={[6, 6]} wrap>
+            {tags.map((tag) => (
+              <Tag
+                key={tag.label}
+                bordered={false}
+                className="status-tag"
+                color={tag.background}
+                style={{ color: tag.color }}
+              >
+                {tag.label}
+              </Tag>
+            ))}
+          </Space>
+        )
+      },
     },
     {
       title: '审核状态',
       key: 'reviewStatus',
       width: 200,
       render: (_value, record) => {
-        if (record.flowMode === 'auto') {
+        if (!record.currentStageNeedsReview) {
           return <Typography.Text className="muted-text">不适用</Typography.Text>
         }
 
