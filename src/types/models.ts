@@ -4,6 +4,9 @@ export type TaskStatus =
   | 'pending_annotate'
   | 'pending_train'
   | 'finished'
+export type TaskFlowMode = 'auto' | 'manual'
+export type TaskReviewStatus = 'none' | 'pending_admin_review' | 'rejected'
+export type TaskReviewStage = 'clean' | 'annotate' | 'train'
 
 export type UploadPurpose =
   | 'task_source'
@@ -83,6 +86,15 @@ export type TaskSummary = {
   description: string
   status: TaskStatus
   statusLabel: string
+  flowMode: TaskFlowMode
+  flowModeLabel: string
+  reviewStatus: TaskReviewStatus
+  reviewStatusLabel: string
+  reviewStage: TaskReviewStage | null
+  reviewStageLabel: string | null
+  reviewActionLabel: string | null
+  reviewComment: string | null
+  needsAdminReview: boolean
   createdAt: string
   finishedAt: string | null
   creator: TaskAssignee
@@ -93,6 +105,8 @@ export type TaskSummary = {
   }
   myRole: UserRole
   canHandle: boolean
+  canReview: boolean
+  canResubmit: boolean
 }
 
 export type TaskListSummary = {
@@ -129,6 +143,8 @@ export type TaskDetail = TaskSummary & {
   }
   downloads: TaskDownload[]
   canSubmitCurrentStage: boolean
+  canReviewCurrentStage: boolean
+  canResubmitCurrentStage: boolean
   currentStage: {
     role: UserRole | null
     label: string

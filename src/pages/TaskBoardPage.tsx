@@ -6,7 +6,7 @@ import CreateTaskDrawer from '../components/CreateTaskDrawer'
 import TaskDetailDrawer from '../components/TaskDetailDrawer'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
-import type { TaskListSummary, TaskStatus, TaskSummary, UserSummary } from '../types/models'
+import type { TaskFlowMode, TaskListSummary, TaskStatus, TaskSummary, UserSummary } from '../types/models'
 
 const PAGE_SIZE = 10
 
@@ -60,6 +60,17 @@ const taskStatusFilterOptions: Array<{ text: string; value: TaskStatus }> = [
     value: 'finished',
   },
 ]
+
+const flowModeTagStyleMap: Record<TaskFlowMode, { background: string; color: string }> = {
+  auto: {
+    background: '#F6FFED',
+    color: '#389E0D',
+  },
+  manual: {
+    background: '#FFF1F0',
+    color: '#CF1322',
+  },
+}
 
 type TaskTableFilters = Parameters<NonNullable<TableProps<TaskSummary>['onChange']>>[1]
 
@@ -261,6 +272,41 @@ function TaskBoardPage() {
       ),
     },
     {
+      title: '流转模式',
+      key: 'flowMode',
+      width: 120,
+      render: (_value, record) => (
+        <Tag
+          bordered={false}
+          className="status-tag"
+          color={flowModeTagStyleMap[record.flowMode].background}
+          style={{ color: flowModeTagStyleMap[record.flowMode].color }}
+        >
+          {record.flowModeLabel}
+        </Tag>
+      ),
+    },
+    {
+      title: '审核状态',
+      key: 'reviewStatus',
+      width: 200,
+      render: (_value, record) => {
+        if (record.flowMode === 'auto') {
+          return <Typography.Text className="muted-text">不适用</Typography.Text>
+        }
+
+        if (record.reviewActionLabel && record.needsAdminReview) {
+          return <Typography.Text>{record.reviewActionLabel}</Typography.Text>
+        }
+
+        return (
+          <Typography.Text className={record.reviewStatus === 'rejected' ? '' : 'muted-text'}>
+            {record.reviewStatusLabel}
+          </Typography.Text>
+        )
+      },
+    },
+    {
       title: '清洗负责人',
       key: 'cleaner',
       width: 140,
@@ -290,13 +336,19 @@ function TaskBoardPage() {
       render: (_value, record) => (
         <Space size="small">
           <Button
-            type={record.canHandle ? 'primary' : 'default'}
+            type={record.canHandle || record.canReview || record.canResubmit ? 'primary' : 'default'}
             onClick={() => {
               setSelectedTaskId(record.id)
               setDetailOpen(true)
             }}
           >
-            {record.canHandle ? '进入处理' : '查看详情'}
+            {record.canReview
+              ? '进入审核'
+              : record.canResubmit
+                ? '重新提交'
+                : record.canHandle
+                  ? '进入处理'
+                  : '查看详情'}
           </Button>
 
           {session?.user.role === 'admin' ? (

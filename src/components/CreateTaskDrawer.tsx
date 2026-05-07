@@ -3,6 +3,7 @@ import {
   Drawer,
   Form,
   Input,
+  Radio,
   Select,
   Space,
   Typography,
@@ -13,6 +14,7 @@ import { createTask } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import type {
   TaskDetail,
+  TaskFlowMode,
   UploadedFileRef,
   UserRole,
   UserSummary,
@@ -29,6 +31,7 @@ type CreateTaskDrawerProps = {
 type CreateTaskFormValues = {
   title: string
   description: string
+  flowMode: TaskFlowMode
   cleanerId: number
   annotatorId: number
   trainerId: number
@@ -84,8 +87,8 @@ function CreateTaskDrawer({
       }
     >
       <Typography.Paragraph className="drawer-helper">
-        管理员创建任务时需要上传初始文件，并为三类执行人分别指定负责人。初始文件仅支持{' '}
-        {ARCHIVE_FILE_HINT}。
+        管理员创建任务时需要上传初始文件、选择流转模式，并为三类执行人分别指定负责人。
+        标注者当前固定为单人。初始文件仅支持 {ARCHIVE_FILE_HINT}。
       </Typography.Paragraph>
 
       <Form<CreateTaskFormValues>
@@ -130,6 +133,20 @@ function CreateTaskDrawer({
           <Input.TextArea
             rows={4}
             placeholder="补充数据来源、处理要求、验收口径等说明"
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="任务流转模式"
+          name="flowMode"
+          initialValue="auto"
+          rules={[{ required: true, message: '请选择任务流转模式' }]}
+        >
+          <Radio.Group
+            options={[
+              { label: '自动流转', value: 'auto' },
+              { label: '手动流转', value: 'manual' },
+            ]}
           />
         </Form.Item>
 

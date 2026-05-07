@@ -7,6 +7,7 @@ import {
   Empty,
   Input,
   List,
+  Modal,
   Space,
   Tag,
   Typography,
@@ -18,6 +19,7 @@ import {
   downloadTaskFile,
   getTaskDetail,
   getTaskFileDownloadLink,
+  reviewTaskStage,
 } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import type {
@@ -96,6 +98,14 @@ function getTaskStatusTagStyle(canHandle: boolean) {
       }
 }
 
+function getSubmitCardDescription(task: TaskDetail) {
+  if (task.flowMode === 'manual') {
+    return '上传当前阶段产物并填写备注后，任务会进入等待管理员复核；若审核未通过，可在当前阶段重新提交。'
+  }
+
+  return '上传当前阶段产物并填写备注后，任务会自动流转到下一阶段。'
+}
+
 function TaskDetailDrawer({
   taskId,
   open,
@@ -112,6 +122,7 @@ function TaskDetailDrawer({
     endpoint: string
     label: string
   } | null>(null)
+  const [reviewCommentDraft, setReviewCommentDraft] = useState('')
   const [, startTransition] = useTransition()
   const uploadRule = getStageUploadRule(task?.currentStage.role ?? null)
   const uploadPurpose = getStageUploadPurpose(task?.currentStage.role ?? null)
@@ -125,6 +136,7 @@ function TaskDetailDrawer({
       setLoading(true)
       setRemark('')
       setUploadedFile(null)
+      setReviewCommentDraft('')
 
       void getTaskDetail(taskId, session.token)
         .then((detail) => {
@@ -151,6 +163,7 @@ function TaskDetailDrawer({
         setRemark('')
         setUploadedFile(null)
         setPreviewTarget(null)
+        setReviewCommentDraft('')
         setLoading(false)
         onClose()
       }}
@@ -184,6 +197,16 @@ function TaskDetailDrawer({
                     </Tag>
                   )
                 })(),
+              },
+              {
+                key: 'flowMode',
+                label: '流转模式',
+                children: task.flowModeLabel,
+              },
+              {
+                key: 'reviewStatus',
+                label: '审核状态',
+                children: task.flowMode === 'manual' ? task.reviewStatusLabel : '不适用',
               },
               {
                 key: 'description',
@@ -304,6 +327,17 @@ function TaskDetailDrawer({
             )}
           </Card>
 
+          {task.flowMode === 'manual' && task.reviewComment ? (
+            <Alert
+              type={task.reviewStatus === 'rejected' ? 'error' : 'info'}
+              showIcon
+              message={
+                task.reviewStatus === 'rejected' ? '管理员审核未通过' : '管理员审核备注'
+              }
+              description={task.reviewComment}
+            />
+          ) : null}
+
           <Card size="small" className="panel-card">
             <Typography.Title level={5} className="drawer-section-title">
               阶段备注
@@ -337,7 +371,7 @@ function TaskDetailDrawer({
                   type="info"
                   showIcon
                   message={`当前阶段：${task.currentStage.label}`}
-                  description="上传当前阶段产物并填写备注后，任务会自动流转到下一阶段。"
+                  description={getSubmitCardDescription(task)}
                 />
 
                 {session ? (
@@ -395,7 +429,9 @@ function TaskDetailDrawer({
                         })
                         setRemark('')
                         setUploadedFile(null)
-                        message.success('任务阶段已提交')
+                        message.success(
+                          task.flowMode === 'manual' ? '任务阶段已提交，等待管理员复核' : '任务阶段已提交',
+                        )
                         onTaskChanged()
                       })
                       .catch((error) => {
@@ -408,8 +444,135 @@ function TaskDetailDrawer({
                       })
                   }}
                 >
-                  {getSubmitButtonLabel(task)}
+                  {task.canResubmitCurrentStage ? '重新提交当前阶段' : getSubmitButtonLabel(task)}
                 </Button>
+              </Space>
+            </Card>
+          ) : null}
+
+          {task.canReviewCurrentStage && task.reviewStage ? (
+            <Card size="small" className="panel-card stage-submit-card">
+              <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                <Alert
+                  type="warning"
+                  showIcon
+                  message={`待复核内容：${task.reviewStageLabel ?? task.reviewActionLabel ?? '当前阶段结果'}`}
+                  description="当前任务采用手动流转模式。管理员审核通过后才会继续流转；驳回后由当前阶段负责人根据审核意见重新提交。"
+                />
+
+                <div>
+                  <Typography.Text strong>审核意见</Typography.Text>
+                  <Input.TextArea
+                    rows={4}
+                    value={reviewCommentDraft}
+                    onChange={(event) => {
+                      setReviewCommentDraft(event.target.value)
+                    }}
+                    placeholder="通过时可选填说明；驳回时必须填写原因"
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
+
+                <Space>
+                  <Button
+                    danger
+                    loading={submitting}
+                    onClick={() => {
+                      if (!session || !taskId || !task.reviewStage) {
+                        return
+                      }
+
+                      const reviewStage = task.reviewStage
+                      const normalizedComment = reviewCommentDraft.trim()
+
+                      if (!normalizedComment) {
+                        message.warning('驳回时请先填写审核意见')
+                        return
+                      }
+
+                      Modal.confirm({
+                        title: '确认驳回当前阶段结果吗？',
+                        content: '驳回后任务将保留在当前主状态，由当前阶段负责人根据审核意见重新提交。',
+                        okText: '确认驳回',
+                        cancelText: '取消',
+                        okButtonProps: {
+                          danger: true,
+                        },
+                        onOk: async () => {
+                          setSubmitting(true)
+
+                          try {
+                            const detail = await reviewTaskStage(
+                              taskId,
+                              {
+                                action: 'reject',
+                                reviewStage,
+                                reviewComment: normalizedComment,
+                              },
+                              session.token,
+                            )
+
+                            startTransition(() => {
+                              setTask(detail)
+                            })
+                            setReviewCommentDraft('')
+                            message.success('审核已驳回，任务待重新提交')
+                            onTaskChanged()
+                          } catch (error) {
+                            message.error(
+                              error instanceof Error ? error.message : '驳回审核失败',
+                            )
+                          } finally {
+                            setSubmitting(false)
+                          }
+                        },
+                      })
+                    }}
+                  >
+                    驳回并退回修改
+                  </Button>
+
+                  <Button
+                    type="primary"
+                    loading={submitting}
+                    onClick={() => {
+                      if (!session || !taskId || !task.reviewStage) {
+                        return
+                      }
+
+                      const reviewStage = task.reviewStage
+                      setSubmitting(true)
+
+                      void reviewTaskStage(
+                        taskId,
+                        {
+                          action: 'approve',
+                          reviewStage,
+                          reviewComment: reviewCommentDraft.trim() || undefined,
+                        },
+                        session.token,
+                      )
+                        .then((detail) => {
+                          startTransition(() => {
+                            setTask(detail)
+                          })
+                          setReviewCommentDraft('')
+                          message.success('审核通过，任务已继续流转')
+                          onTaskChanged()
+                        })
+                        .catch((error) => {
+                          message.error(
+                            error instanceof Error ? error.message : '审核通过失败',
+                          )
+                        })
+                        .finally(() => {
+                          setSubmitting(false)
+                        })
+                    }}
+                  >
+                    审核通过并流转
+                  </Button>
+                </Space>
               </Space>
             </Card>
           ) : null}

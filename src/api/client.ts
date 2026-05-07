@@ -4,7 +4,9 @@ import type {
   TaskArchivePreviewPage,
   TaskDetail,
   TaskDownloadLink,
+  TaskFlowMode,
   TaskListResponse,
+  TaskReviewStage,
   TaskStatus,
   UploadPurpose,
   UploadedFileRef,
@@ -31,6 +33,16 @@ export type ChunkUploadSession = {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+
+function resolveDownloadUrl(url: string): string {
+  const apiBaseUrl = API_BASE_URL
+    ? new URL(API_BASE_URL, window.location.origin).toString()
+    : window.location.origin
+
+  // 后端在未配置 FILE_BASE_URL 时会返回相对地址，前端这里统一按实际 API 基址补全，
+  // 避免浏览器把下载链接错误解析到 127.0.0.1 或错误的前端域名上。
+  return new URL(url, apiBaseUrl).toString()
+}
 
 function buildQueryString(
   params: Record<string, string | number | boolean | undefined>,
@@ -143,6 +155,7 @@ export async function getTasks(
     pageSize?: number
     keyword?: string
     status?: TaskStatus
+    flowMode?: TaskFlowMode
   },
 ): Promise<TaskListResponse> {
   const payload = await request<TaskListResponse>(
@@ -151,6 +164,7 @@ export async function getTasks(
       pageSize: options?.pageSize,
       keyword: options?.keyword?.trim() || undefined,
       status: options?.status,
+      flowMode: options?.flowMode,
     })}`,
     {
       token,
@@ -250,6 +264,7 @@ export async function createTask(
   payload: {
     title: string
     description: string
+    flowMode: TaskFlowMode
     cleanerId: number
     annotatorId: number
     trainerId: number
@@ -296,6 +311,30 @@ export async function completeTaskStage(
 ): Promise<TaskDetail | null> {
   const response = await request<{ item: TaskDetail | null }>(
     `/api/v1/tasks/${taskId}/complete-stage`,
+    {
+      method: 'POST',
+      token,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    },
+  )
+
+  return response.item
+}
+
+export async function reviewTaskStage(
+  taskId: number,
+  payload: {
+    action: 'approve' | 'reject'
+    reviewStage: TaskReviewStage
+    reviewComment?: string
+  },
+  token: string,
+): Promise<TaskDetail | null> {
+  const response = await request<{ item: TaskDetail | null }>(
+    `/api/v1/tasks/${taskId}/review`,
     {
       method: 'POST',
       token,
@@ -391,9 +430,14 @@ export async function getTaskFileDownloadLink(
   endpoint: string,
   token: string,
 ): Promise<TaskDownloadLink> {
-  return request<TaskDownloadLink>(endpoint, {
+  const payload = await request<TaskDownloadLink>(endpoint, {
     token,
   })
+
+  return {
+    ...payload,
+    url: resolveDownloadUrl(payload.url),
+  }
 }
 
 export async function getTaskFilePreviewPage(
