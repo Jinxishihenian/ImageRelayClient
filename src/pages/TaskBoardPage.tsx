@@ -1,4 +1,4 @@
-import { Button, Card, Col, Input, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
+import { Badge, Button, Card, Col, Input, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
 import type { TableColumnsType, TablePaginationConfig, TableProps } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { deleteTask, getTasks, getUsers } from '../api/client'
@@ -425,18 +425,38 @@ function TaskBoardPage() {
 
   const metrics = [
     {
-      label: '总任务数',
-      value: summary.total,
-    },
-    {
       label: '待我处理',
       value: summary.actionableCount,
+    },
+    {
+      label: '总任务数',
+      value: summary.total,
     },
     {
       label: '已完成',
       value: summary.finishedCount,
     },
   ]
+
+  function renderMetricCard(metric: { label: string; value: number }) {
+    const card = (
+      <Card className="panel-card metric-card task-metric-card">
+        <Typography.Text className="muted-text">{metric.label}</Typography.Text>
+        <Typography.Title level={3}>{metric.value}</Typography.Title>
+      </Card>
+    )
+
+    if (metric.label === '待我处理') {
+      // 用醒目的角标强调“待我处理”卡片，提醒用户这里有高优先级待办。
+      return (
+        <Badge.Ribbon text="优先处理" color="red">
+          {card}
+        </Badge.Ribbon>
+      )
+    }
+
+    return card
+  }
 
   if (!session) {
     return null
@@ -472,10 +492,7 @@ function TaskBoardPage() {
       <Row gutter={[16, 12]} className="task-metrics-row">
         {metrics.map((metric) => (
           <Col xs={24} md={8} key={metric.label}>
-            <Card className="panel-card metric-card task-metric-card">
-              <Typography.Text className="muted-text">{metric.label}</Typography.Text>
-              <Typography.Title level={3}>{metric.value}</Typography.Title>
-            </Card>
+            {renderMetricCard(metric)}
           </Col>
         ))}
       </Row>
