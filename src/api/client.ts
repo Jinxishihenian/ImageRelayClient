@@ -1,5 +1,7 @@
 import type {
   AuthSession,
+  DatasetDetail,
+  DatasetListResponse,
   ModelIterationDetail,
   ModelIterationListResponse,
   ModelIterationSummary,
@@ -175,6 +177,35 @@ export async function getTasks(
   )
 
   return payload
+}
+
+export async function getDatasets(
+  token: string,
+  options?: {
+    page?: number
+    pageSize?: number
+    keyword?: string
+  },
+): Promise<DatasetListResponse> {
+  return request<DatasetListResponse>(
+    `/api/v1/datasets${buildQueryString({
+      page: options?.page,
+      pageSize: options?.pageSize,
+      keyword: options?.keyword?.trim() || undefined,
+    })}`,
+    {
+      token,
+    },
+  )
+}
+
+export async function getDatasetDetail(
+  datasetId: number,
+  token: string,
+): Promise<DatasetDetail> {
+  return request<DatasetDetail>(`/api/v1/datasets/${datasetId}`, {
+    token,
+  })
 }
 
 export async function getModels(

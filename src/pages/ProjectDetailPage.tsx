@@ -200,14 +200,14 @@ function ProjectDetailPage() {
         </div>
 
         <div className="page-actions">
-          <Button onClick={() => navigate('/projects')}>返回项目列表</Button>
+            <Button onClick={() => navigate('/projects')}>返回项目列表</Button>
         </div>
       </section>
 
       <Card className="panel-card" loading={loading}>
         {detail ? (
           <Descriptions bordered size="small" column={2}>
-            <Descriptions.Item label="项目状态">
+              <Descriptions.Item label="项目状态">
               <Tag
                 bordered={false}
                 className="status-tag"

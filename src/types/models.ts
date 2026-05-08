@@ -1,5 +1,6 @@
 export type UserRole = 'admin' | 'cleaner' | 'annotator' | 'trainer'
 export type ModelIterationStatus = 'active' | 'archived'
+export type DatasetStage = 'raw' | 'cleaned' | 'annotated'
 export type TaskStatus =
   | 'pending_clean'
   | 'pending_annotate'
@@ -38,6 +39,47 @@ export type PaginationMeta = {
   pageSize: number
   total: number
   totalPages: number
+}
+
+export type DatasetVersionSummary = {
+  id: number
+  versionNo: number
+  stage: DatasetStage
+  stageLabel: string
+  label: string
+  parentVersionId: number | null
+  parentVersionLabel: string | null
+  reviewBased: boolean
+  createdBy: TaskAssignee
+  createdAt: string
+  fileName: string
+  sourceTaskId: number
+}
+
+export type DatasetSummary = {
+  id: number
+  taskId: number
+  name: string
+  description: string
+  modality: string
+  taskType: string
+  creator: TaskAssignee
+  currentVersionId: number | null
+  currentVersionLabel: string | null
+  currentVersionNo: number | null
+  versionCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type DatasetDetail = DatasetSummary & {
+  taskTitle: string
+  versions: DatasetVersionSummary[]
+}
+
+export type DatasetListResponse = {
+  items: DatasetSummary[]
+  pagination: PaginationMeta
 }
 
 export type UserListSummary = {
@@ -137,6 +179,13 @@ export type ModelIterationListResponse = {
 export type TaskSummary = {
   id: number
   modelIteration: ModelIterationRef
+  dataset: {
+    id: number
+    name: string
+    rawVersionId: number | null
+    cleanedVersionId: number | null
+    annotatedVersionId: number | null
+  } | null
   title: string
   description: string
   status: TaskStatus
@@ -207,6 +256,41 @@ export type TaskDetail = TaskSummary & {
     role: UserRole | null
     label: string
   }
+  dataset: {
+    id: number
+    name: string
+    currentVersion: {
+      id: number
+      versionNo: number
+      stage: DatasetStage
+      stageLabel: string
+      label: string
+    } | null
+    versions: DatasetVersionSummary[]
+    keyVersions: {
+      raw: {
+        id: number
+        label: string
+        stage: DatasetStage
+        stageLabel: string
+        createdAt: string
+      } | null
+      cleaned: {
+        id: number
+        label: string
+        stage: DatasetStage
+        stageLabel: string
+        createdAt: string
+      } | null
+      annotated: {
+        id: number
+        label: string
+        stage: DatasetStage
+        stageLabel: string
+        createdAt: string
+      } | null
+    }
+  } | null
 }
 
 export type ModelListItem = {

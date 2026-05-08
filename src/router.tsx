@@ -3,6 +3,7 @@ import App from './App.tsx'
 import RequireAdmin from './components/RequireAdmin.tsx'
 import RequireAuth from './components/RequireAuth.tsx'
 import MainLayout from './layouts/MainLayout.tsx'
+import FileListPage from './pages/FileListPage.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import ModelListPage from './pages/ModelListPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
               {
                 element: <RequireAdmin />,
                 children: [
+                  {
+                    path: 'datasets',
+                    element: <FileListPage />,
+                  },
                   {
                     path: 'projects',
                     element: <ProjectManagementPage />,

@@ -124,6 +124,22 @@ function getApprovalStageLabels(task: TaskDetail) {
   return labels.length > 0 ? labels.join('、') : '无'
 }
 
+function renderDatasetKeyVersion(label: string, value: TaskDetail['dataset'] extends infer T
+  ? T extends { keyVersions: infer K }
+    ? K[keyof K]
+    : never
+  : never,
+) {
+  return (
+    <div className="remark-section">
+      <Typography.Text strong>{label}</Typography.Text>
+      <Typography.Paragraph className="muted-paragraph">
+        {value ? `${value.label} / ${new Date(value.createdAt).toLocaleString('zh-CN', { hour12: false })}` : '暂无'}
+      </Typography.Paragraph>
+    </div>
+  )
+}
+
 function TaskDetailDrawer({
   taskId,
   open,
@@ -258,6 +274,36 @@ function TaskDetailDrawer({
               },
             ]}
           />
+
+          <Card size="small" className="panel-card">
+            <Typography.Title level={5} className="drawer-section-title">
+              数据集版本
+            </Typography.Title>
+
+            {task.dataset ? (
+              <div className="remark-list">
+                <div className="remark-section">
+                  <Typography.Text strong>数据集</Typography.Text>
+                  <Typography.Paragraph className="muted-paragraph">
+                    {task.dataset.name}
+                  </Typography.Paragraph>
+                </div>
+                <div className="remark-section">
+                  <Typography.Text strong>当前版本</Typography.Text>
+                  <Typography.Paragraph className="muted-paragraph">
+                    {task.dataset.currentVersion?.label || '暂无'}
+                  </Typography.Paragraph>
+                </div>
+                {renderDatasetKeyVersion('原始版本', task.dataset.keyVersions.raw)}
+                {renderDatasetKeyVersion('清洗版本', task.dataset.keyVersions.cleaned)}
+                {renderDatasetKeyVersion('标注版本', task.dataset.keyVersions.annotated)}
+              </div>
+            ) : (
+              <Typography.Text className="muted-text">
+                当前任务尚未生成数据集
+              </Typography.Text>
+            )}
+          </Card>
 
           <Card size="small" className="panel-card">
             <Typography.Title level={5} className="drawer-section-title">

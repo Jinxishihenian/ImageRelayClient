@@ -210,9 +210,9 @@ function ProjectManagementPage() {
         </div>
 
         <div className="page-actions">
-          <Button type="primary" size="large" onClick={() => setCreateOpen(true)}>
+            <Button type="primary" size="large" onClick={() => setCreateOpen(true)}>
             新建项目
-          </Button>
+            </Button>
         </div>
       </section>
 
@@ -221,7 +221,7 @@ function ProjectManagementPage() {
           <div className="toolbar-copy">
             <Typography.Title level={5}>项目列表</Typography.Title>
             <Typography.Text className="muted-text">
-              统一管理模型迭代主线，并查看该项目下的任务和模型结果聚合。
+              统一管理项目主线，并查看该项目下的任务和模型结果聚合。
             </Typography.Text>
           </div>
 
@@ -313,7 +313,7 @@ function ProjectManagementPage() {
           </Form.Item>
 
           <Form.Item label="项目描述" name="description">
-            <Input.TextArea rows={3} placeholder="补充项目背景与说明" />
+            <Input.TextArea rows={3} placeholder="补充本项目背景与说明" />
           </Form.Item>
 
           <Form.Item
