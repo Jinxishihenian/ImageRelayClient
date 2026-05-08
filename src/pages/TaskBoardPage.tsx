@@ -1,6 +1,6 @@
 import { Badge, Button, Card, Col, Input, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
 import type { TableColumnsType, TablePaginationConfig, TableProps } from 'antd'
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { deleteTask, getModelIterations, getTasks, getUsers } from '../api/client'
 import CreateTaskDrawer from '../components/CreateTaskDrawer'
 import TaskDetailDrawer from '../components/TaskDetailDrawer'
@@ -21,6 +21,8 @@ const EMPTY_TASK_SUMMARY: TaskListSummary = {
   actionableCount: 0,
   finishedCount: 0,
 }
+
+const METRIC_ANIMATION_DURATION = 1000
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', {
@@ -119,6 +121,10 @@ function isTaskStatus(value: TaskListStatusFilter | null): value is TaskStatus {
   )
 }
 
+function easeOutCubic(progress: number) {
+  return 1 - (1 - progress) ** 3
+}
+
 function TaskBoardPage() {
   const { Search } = Input
   const { session } = useAuth()
@@ -127,6 +133,7 @@ function TaskBoardPage() {
   const [users, setUsers] = useState<UserSummary[]>([])
   const [modelIterations, setModelIterations] = useState<ModelIterationSummary[]>([])
   const [summary, setSummary] = useState<TaskListSummary>(EMPTY_TASK_SUMMARY)
+  const [animatedSummary, setAnimatedSummary] = useState<TaskListSummary>(EMPTY_TASK_SUMMARY)
   const [loading, setLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
@@ -137,6 +144,16 @@ function TaskBoardPage() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<TaskListStatusFilter | null>(null)
   const [, startTransition] = useTransition()
+  const metricAnimationFrameRef = useRef<number | null>(null)
+  const hasLoadedSummaryRef = useRef(false)
+  const hasPlayedMetricAnimationRef = useRef(false)
+
+  const cancelMetricAnimation = useCallback(() => {
+    if (metricAnimationFrameRef.current !== null) {
+      cancelAnimationFrame(metricAnimationFrameRef.current)
+      metricAnimationFrameRef.current = null
+    }
+  }, [])
 
   const loadTasks = useCallback(
     async (
@@ -162,6 +179,7 @@ function TaskBoardPage() {
           status: isTaskStatus(status) ? status : undefined,
           reviewStatus: status === 'pending_admin_review' ? 'pending_admin_review' : undefined,
         })
+        hasLoadedSummaryRef.current = true
 
         startTransition(() => {
           setTasks(response.items)
@@ -229,6 +247,67 @@ function TaskBoardPage() {
       void loadModelIterations()
     })
   }, [loadModelIterations])
+
+  useEffect(() => {
+    if (!hasLoadedSummaryRef.current) {
+      return
+    }
+
+    cancelMetricAnimation()
+
+    const nextSummary: TaskListSummary = {
+      total: summary.total,
+      actionableCount: summary.actionableCount,
+      finishedCount: summary.finishedCount,
+    }
+
+    const shouldAnimateOnFirstPaint =
+      !hasPlayedMetricAnimationRef.current &&
+      (nextSummary.total > 0 || nextSummary.actionableCount > 0 || nextSummary.finishedCount > 0)
+
+    if (!shouldAnimateOnFirstPaint) {
+      // 首次接口返回就是 0 时直接显示，避免为了“播动画”制造无意义跳动。
+      // 同时这里也负责后续筛选/翻页后的同步更新，确保只在首屏播放一次。
+      hasPlayedMetricAnimationRef.current = true
+      setAnimatedSummary(nextSummary)
+      return
+    }
+
+    hasPlayedMetricAnimationRef.current = true
+    const animationStartAt = performance.now()
+
+    const step = (timestamp: number) => {
+      const progress = Math.min((timestamp - animationStartAt) / METRIC_ANIMATION_DURATION, 1)
+      const easedProgress = easeOutCubic(progress)
+
+      setAnimatedSummary({
+        total: Math.round(nextSummary.total * easedProgress),
+        actionableCount: Math.round(nextSummary.actionableCount * easedProgress),
+        finishedCount: Math.round(nextSummary.finishedCount * easedProgress),
+      })
+
+      if (progress < 1) {
+        metricAnimationFrameRef.current = requestAnimationFrame(step)
+        return
+      }
+
+      metricAnimationFrameRef.current = null
+      setAnimatedSummary(nextSummary)
+    }
+
+    metricAnimationFrameRef.current = requestAnimationFrame(step)
+
+    return () => {
+      // React StrictMode 下 effect 会重复进入，清掉旧帧可以避免数字抖动或叠加。
+      cancelMetricAnimation()
+    }
+  }, [cancelMetricAnimation, summary])
+
+  useEffect(() => {
+    return () => {
+      cancelMetricAnimation()
+    }
+  }, [cancelMetricAnimation])
 
   const handleSearch = useCallback((value: string) => {
     const normalizedKeyword = value.trim()
@@ -461,21 +540,24 @@ function TaskBoardPage() {
   const metrics = [
     {
       label: '待我处理',
-      value: summary.actionableCount,
+      value: animatedSummary.actionableCount,
     },
     {
       label: '总任务数',
-      value: summary.total,
+      value: animatedSummary.total,
     },
     {
       label: '已完成',
-      value: summary.finishedCount,
+      value: animatedSummary.finishedCount,
     },
   ]
 
-  function renderMetricCard(metric: { label: string; value: number }) {
+  function renderMetricCard(metric: { label: string; value: number }, index: number) {
     const card = (
-      <Card className="panel-card metric-card task-metric-card">
+      <Card
+        className="panel-card metric-card task-metric-card animate__animated animate__fadeInUp"
+        style={{ animationDelay: `${index * 120}ms` }}
+      >
         <Typography.Text className="muted-text">{metric.label}</Typography.Text>
         <Typography.Title level={3}>{metric.value}</Typography.Title>
       </Card>
@@ -525,9 +607,9 @@ function TaskBoardPage() {
       </section>
 
       <Row gutter={[16, 12]} className="task-metrics-row">
-        {metrics.map((metric) => (
+        {metrics.map((metric, index) => (
           <Col xs={24} md={8} key={metric.label}>
-            {renderMetricCard(metric)}
+            {renderMetricCard(metric, index)}
           </Col>
         ))}
       </Row>

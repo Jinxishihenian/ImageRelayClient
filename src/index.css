@@ -394,6 +394,10 @@ h6 {
   padding: 16px;
 }
 
+.task-metric-card.animate__animated {
+  --animate-duration: 720ms;
+}
+
 .task-metric-card .muted-text {
   font-size: 13px;
 }
