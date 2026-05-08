@@ -1,10 +1,10 @@
-import { Button, Card, Input, Space, Table, Typography, message } from 'antd'
+import { Button, Card, Input, Select, Space, Table, Typography, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { downloadTaskFile, getModels } from '../api/client'
+import { downloadTaskFile, getModelIterations, getModels } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
-import type { ModelListItem } from '../types/models'
+import type { ModelIterationSummary, ModelListItem } from '../types/models'
 
 const PAGE_SIZE = 10
 
@@ -19,16 +19,23 @@ function ModelListPage() {
   const { session } = useAuth()
   const { containerRef: tableContainerRef, scrollY } = useTableScrollY()
   const [models, setModels] = useState<ModelListItem[]>([])
+  const [modelIterations, setModelIterations] = useState<ModelIterationSummary[]>([])
   const [loading, setLoading] = useState(false)
   const [downloadingTaskId, setDownloadingTaskId] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [selectedModelIterationId, setSelectedModelIterationId] = useState<number | undefined>()
   const [, startTransition] = useTransition()
 
   const loadModels = useCallback(
-    async (page: number, keyword: string, options?: { silent?: boolean }) => {
+    async (
+      page: number,
+      keyword: string,
+      modelIterationId: number | undefined,
+      options?: { silent?: boolean },
+    ) => {
       if (!session) {
         return
       }
@@ -42,6 +49,7 @@ function ModelListPage() {
           page,
           pageSize: PAGE_SIZE,
           keyword,
+          modelIterationId,
         })
 
         startTransition(() => {
@@ -60,11 +68,33 @@ function ModelListPage() {
     [session, startTransition],
   )
 
+  const loadModelIterations = useCallback(async () => {
+    if (!session) {
+      return
+    }
+
+      try {
+        const response = await getModelIterations(session.token, { all: true })
+
+        startTransition(() => {
+          setModelIterations(response.items.filter((item) => item.status === 'active'))
+        })
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '项目列表加载失败')
+      }
+  }, [session, startTransition])
+
   useEffect(() => {
     queueMicrotask(() => {
-      void loadModels(currentPage, searchKeyword)
+      void loadModels(currentPage, searchKeyword, selectedModelIterationId)
     })
-  }, [currentPage, loadModels, searchKeyword])
+  }, [currentPage, loadModels, searchKeyword, selectedModelIterationId])
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadModelIterations()
+    })
+  }, [loadModelIterations])
 
   const handleSearch = useCallback(
     (value: string) => {
@@ -86,9 +116,9 @@ function ModelListPage() {
         return
       }
 
-      void loadModels(1, normalizedKeyword)
+      void loadModels(1, normalizedKeyword, selectedModelIterationId)
     },
-    [currentPage, loadModels, searchKeyword],
+    [currentPage, loadModels, searchKeyword, selectedModelIterationId],
   )
 
   const columns: TableColumnsType<ModelListItem> = [
@@ -108,6 +138,17 @@ function ModelListPage() {
       dataIndex: 'modelFileName',
       key: 'modelFileName',
       render: (value: string) => <Typography.Text>{value}</Typography.Text>,
+    },
+    {
+      title: '所属项目',
+      key: 'modelIteration',
+      width: 220,
+      render: (_value, record) => (
+        <div className="data-cell-title">
+          <Typography.Text strong>{record.modelIteration.name}</Typography.Text>
+          <Typography.Text className="muted-text">ID：{record.modelIteration.id}</Typography.Text>
+        </div>
+      ),
     },
     {
       title: '训练负责人',
@@ -209,6 +250,27 @@ function ModelListPage() {
               }
             }}
             onSearch={handleSearch}
+          />
+
+          <Select
+            allowClear
+            placeholder="按项目筛选"
+            className="task-search-input"
+            value={selectedModelIterationId}
+            options={modelIterations.map((item) => ({
+              value: item.id,
+              label: item.name,
+            }))}
+            onChange={(value) => {
+              setSelectedModelIterationId(value)
+
+              if (currentPage !== 1) {
+                setCurrentPage(1)
+                return
+              }
+
+              void loadModels(1, searchKeyword, value)
+            }}
           />
         </div>
 

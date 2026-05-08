@@ -227,6 +227,11 @@ function TaskDetailDrawer({
                 children: task.currentStageNeedsReview ? task.reviewStatusLabel : '不适用',
               },
               {
+                key: 'modelIteration',
+                label: '所属项目',
+                children: task.modelIteration.name,
+              },
+              {
                 key: 'description',
                 label: '任务描述',
                 children: task.description || '未填写描述',

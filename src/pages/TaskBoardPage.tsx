@@ -1,12 +1,13 @@
 import { Badge, Button, Card, Col, Input, Popconfirm, Row, Space, Table, Tag, Typography, message } from 'antd'
 import type { TableColumnsType, TablePaginationConfig, TableProps } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { deleteTask, getTasks, getUsers } from '../api/client'
+import { deleteTask, getModelIterations, getTasks, getUsers } from '../api/client'
 import CreateTaskDrawer from '../components/CreateTaskDrawer'
 import TaskDetailDrawer from '../components/TaskDetailDrawer'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
 import type {
+  ModelIterationSummary,
   TaskListSummary,
   TaskStatus,
   TaskSummary,
@@ -124,6 +125,7 @@ function TaskBoardPage() {
   const { containerRef: tableContainerRef, scrollY } = useTableScrollY()
   const [tasks, setTasks] = useState<TaskSummary[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
+  const [modelIterations, setModelIterations] = useState<ModelIterationSummary[]>([])
   const [summary, setSummary] = useState<TaskListSummary>(EMPTY_TASK_SUMMARY)
   const [loading, setLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -194,6 +196,22 @@ function TaskBoardPage() {
     }
   }, [session, startTransition])
 
+  const loadModelIterations = useCallback(async () => {
+    if (!session || session.user.role !== 'admin') {
+      return
+    }
+
+    try {
+      const response = await getModelIterations(session.token, { all: true })
+
+      startTransition(() => {
+        setModelIterations(response.items)
+      })
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '项目列表加载失败')
+    }
+  }, [session, startTransition])
+
   useEffect(() => {
     queueMicrotask(() => {
       void loadTasks(currentPage, searchKeyword, selectedStatus)
@@ -205,6 +223,12 @@ function TaskBoardPage() {
       void loadUsers()
     })
   }, [loadUsers])
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadModelIterations()
+    })
+  }, [loadModelIterations])
 
   const handleSearch = useCallback((value: string) => {
     const normalizedKeyword = value.trim()
@@ -281,6 +305,17 @@ function TaskBoardPage() {
           <Typography.Paragraph className="muted-paragraph compact">
             {record.description || '暂无描述'}
           </Typography.Paragraph>
+        </div>
+      ),
+    },
+    {
+      title: '所属项目',
+      key: 'modelIteration',
+      width: 220,
+      render: (_value, record) => (
+        <div className="data-cell-title">
+          <Typography.Text strong>{record.modelIteration.name}</Typography.Text>
+          <Typography.Text className="muted-text">ID：{record.modelIteration.id}</Typography.Text>
         </div>
       ),
     },
@@ -560,6 +595,7 @@ function TaskBoardPage() {
       <CreateTaskDrawer
         open={createOpen}
         users={users}
+        modelIterations={modelIterations}
         onClose={() => {
           setCreateOpen(false)
         }}

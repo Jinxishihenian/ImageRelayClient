@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { createTask } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import type {
+  ModelIterationSummary,
   TaskDetail,
   UploadedFileRef,
   UserRole,
@@ -23,11 +24,13 @@ import FileUploadField from './FileUploadField'
 type CreateTaskDrawerProps = {
   open: boolean
   users: UserSummary[]
+  modelIterations: ModelIterationSummary[]
   onClose: () => void
   onCreated: (task: TaskDetail | null) => void
 }
 
 type CreateTaskFormValues = {
+  modelIterationId: number
   title: string
   description: string
   approvalStages: Array<'clean' | 'annotate' | 'train'>
@@ -47,6 +50,7 @@ const ARCHIVE_FILE_HINT = 'zip / rar / 7z 压缩包'
 function CreateTaskDrawer({
   open,
   users,
+  modelIterations,
   onClose,
   onCreated,
 }: CreateTaskDrawerProps) {
@@ -104,6 +108,7 @@ function CreateTaskDrawer({
           try {
             const task = await createTask(
               {
+                modelIterationId: values.modelIterationId,
                 title: values.title,
                 description: values.description,
                 needCleanReview: values.approvalStages.includes('clean'),
@@ -127,6 +132,21 @@ function CreateTaskDrawer({
           }
         }}
       >
+        <Form.Item
+          label="所属项目"
+          name="modelIterationId"
+          rules={[{ required: true, message: '请选择所属项目' }]}
+        >
+          <Select
+            placeholder="请选择所属项目"
+            options={modelIterations.map((item) => ({
+              value: item.id,
+              label: `${item.name}（${item.statusLabel}）`,
+              disabled: item.status !== 'active',
+            }))}
+          />
+        </Form.Item>
+
         <Form.Item
           label="任务名称"
           name="title"

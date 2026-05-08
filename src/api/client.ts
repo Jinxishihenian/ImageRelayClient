@@ -1,5 +1,8 @@
 import type {
   AuthSession,
+  ModelIterationDetail,
+  ModelIterationListResponse,
+  ModelIterationSummary,
   ModelListResponse,
   TaskArchivePreviewPage,
   TaskDetail,
@@ -180,6 +183,7 @@ export async function getModels(
     page?: number
     pageSize?: number
     keyword?: string
+    modelIterationId?: number
   },
 ): Promise<ModelListResponse> {
   return request<ModelListResponse>(
@@ -187,11 +191,87 @@ export async function getModels(
       page: options?.page,
       pageSize: options?.pageSize,
       keyword: options?.keyword?.trim() || undefined,
+      modelIterationId: options?.modelIterationId,
     })}`,
     {
       token,
     },
   )
+}
+
+export async function getModelIterations(
+  token: string,
+  options?: {
+    page?: number
+    pageSize?: number
+    keyword?: string
+    all?: boolean
+  },
+): Promise<ModelIterationListResponse> {
+  return request<ModelIterationListResponse>(
+    `/api/v1/model-iterations${buildQueryString({
+      page: options?.page,
+      pageSize: options?.pageSize,
+      keyword: options?.keyword?.trim() || undefined,
+      all: options?.all,
+    })}`,
+    {
+      token,
+    },
+  )
+}
+
+export async function getModelIterationDetail(
+  modelIterationId: number,
+  token: string,
+): Promise<ModelIterationDetail> {
+  return request<ModelIterationDetail>(`/api/v1/model-iterations/${modelIterationId}`, {
+    token,
+  })
+}
+
+export async function createModelIteration(
+  payload: {
+    name: string
+    description: string
+    baseModelName: string
+    goal: string
+  },
+  token: string,
+): Promise<ModelIterationSummary> {
+  const response = await request<{ item: ModelIterationSummary }>(
+    '/api/v1/model-iterations',
+    {
+      method: 'POST',
+      token,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    },
+  )
+
+  return response.item
+}
+
+export async function markCurrentBestModelResult(
+  modelIterationId: number,
+  taskId: number,
+  token: string,
+): Promise<ModelIterationDetail | null> {
+  const response = await request<{ item: ModelIterationDetail | null }>(
+    `/api/v1/model-iterations/${modelIterationId}/current-best-task`,
+    {
+      method: 'POST',
+      token,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ taskId }),
+    },
+  )
+
+  return response.item
 }
 
 export async function createUser(
@@ -262,6 +342,7 @@ export async function getTaskDetail(
 
 export async function createTask(
   payload: {
+    modelIterationId: number
     title: string
     description: string
     needCleanReview: boolean

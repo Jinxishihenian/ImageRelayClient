@@ -1,4 +1,5 @@
 export type UserRole = 'admin' | 'cleaner' | 'annotator' | 'trainer'
+export type ModelIterationStatus = 'active' | 'archived'
 export type TaskStatus =
   | 'pending_clean'
   | 'pending_annotate'
@@ -51,16 +52,56 @@ export type UserListResponse = {
   summary: UserListSummary
 }
 
-export type ModelListItem = {
+export type TaskAssignee = {
+  id: number
+  username: string
+}
+
+export type ModelIterationRef = {
+  id: number
+  name: string
+  status: ModelIterationStatus
+}
+
+export type ModelIterationSummary = {
+  id: number
+  name: string
+  description: string
+  baseModelName: string
+  goal: string
+  status: ModelIterationStatus
+  statusLabel: string
+  creatorId: number
+  creatorUsername: string
+  currentBestTaskId: number | null
+  latestTaskId: number | null
+  createdAt: string
+  updatedAt: string
+  taskCount: number
+  latestTaskAt: string | null
+}
+
+export type ModelIterationTaskItem = {
+  id: number
+  title: string
+  status: TaskStatus
+  statusLabel: string
+  reviewStatus: TaskReviewStatus
+  reviewStatusLabel: string
+  cleaner: TaskAssignee
+  annotator: TaskAssignee
+  trainer: TaskAssignee
+  createdAt: string
+  finishedAt: string | null
+}
+
+export type ModelIterationResultItem = {
   taskId: number
   taskTitle: string
   modelFileName: string
   trainerRemark: string | null
   finishedAt: string
-  trainer: {
-    id: number
-    username: string
-  }
+  trainer: TaskAssignee
   download: {
     alias: 'model'
     label: string
@@ -69,18 +110,33 @@ export type ModelListItem = {
   }
 }
 
-export type ModelListResponse = {
-  items: ModelListItem[]
-  pagination: PaginationMeta
+export type ModelIterationDetail = {
+  id: number
+  name: string
+  description: string
+  baseModelName: string
+  goal: string
+  status: ModelIterationStatus
+  statusLabel: string
+  creator: TaskAssignee
+  currentBestTaskId: number | null
+  latestTaskId: number | null
+  createdAt: string
+  updatedAt: string
+  tasks: ModelIterationTaskItem[]
+  results: ModelIterationResultItem[]
+  latestModelResult: ModelIterationResultItem | null
+  currentBestResult: ModelIterationResultItem | null
 }
 
-export type TaskAssignee = {
-  id: number
-  username: string
+export type ModelIterationListResponse = {
+  items: ModelIterationSummary[]
+  pagination: PaginationMeta
 }
 
 export type TaskSummary = {
   id: number
+  modelIteration: ModelIterationRef
   title: string
   description: string
   status: TaskStatus
@@ -151,6 +207,30 @@ export type TaskDetail = TaskSummary & {
     role: UserRole | null
     label: string
   }
+}
+
+export type ModelListItem = {
+  taskId: number
+  taskTitle: string
+  modelFileName: string
+  trainerRemark: string | null
+  finishedAt: string
+  modelIteration: ModelIterationRef
+  trainer: {
+    id: number
+    username: string
+  }
+  download: {
+    alias: 'model'
+    label: string
+    fileName: string
+    endpoint: string
+  }
+}
+
+export type ModelListResponse = {
+  items: ModelListItem[]
+  pagination: PaginationMeta
 }
 
 export type UploadedFileRef = {

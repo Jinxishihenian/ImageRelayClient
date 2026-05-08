@@ -7,7 +7,7 @@ import {
   Typography,
   type MenuProps,
 } from 'antd'
-import { Boxes, LayoutDashboard, Users, type LucideIcon } from 'lucide-react'
+import { Boxes, FolderKanban, LayoutDashboard, Users, type LucideIcon } from 'lucide-react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import type { UserRole } from '../types/models'
@@ -46,6 +46,11 @@ function getMenuItems(isAdmin: boolean): MenuProps['items'] {
     },
     ...(isAdmin
       ? [
+          {
+            key: '/projects',
+            label: '项目管理',
+            icon: renderMenuIcon(FolderKanban),
+          },
           {
             key: '/models',
             label: '模型列表',

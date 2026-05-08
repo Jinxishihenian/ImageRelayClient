@@ -6,6 +6,8 @@ import MainLayout from './layouts/MainLayout.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import ModelListPage from './pages/ModelListPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
+import ProjectDetailPage from './pages/ProjectDetailPage.tsx'
+import ProjectManagementPage from './pages/ProjectManagementPage.tsx'
 import TaskBoardPage from './pages/TaskBoardPage.tsx'
 import UserListPage from './pages/UserListPage.tsx'
 
@@ -39,6 +41,14 @@ export const router = createBrowserRouter([
               {
                 element: <RequireAdmin />,
                 children: [
+                  {
+                    path: 'projects',
+                    element: <ProjectManagementPage />,
+                  },
+                  {
+                    path: 'projects/:projectId',
+                    element: <ProjectDetailPage />,
+                  },
                   {
                     path: 'models',
                     element: <ModelListPage />,
