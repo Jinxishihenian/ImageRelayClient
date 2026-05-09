@@ -41,6 +41,29 @@ type TaskDetailDrawerProps = {
 
 const ARCHIVE_EXTENSIONS = ['.zip', '.rar', '.7z']
 const ARCHIVE_FILE_HINT = 'zip / rar / 7z 压缩包'
+const JSON_EXTENSIONS = ['.json']
+const JSON_FILE_HINT = 'json 清单文件'
+const CLEANED_TEMPLATE_FILE_NAME = '清洗结果示例模板.json'
+const CLEANED_TEMPLATE_CONTENT = JSON.stringify(
+  ['a.png', 'b.png'],
+  null,
+  2,
+)
+
+function downloadTextFile(fileName: string, content: string, mimeType: string) {
+  const blob = new Blob([content], {
+    type: `${mimeType};charset=utf-8`,
+  })
+  const downloadUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+
+  anchor.href = downloadUrl
+  anchor.download = fileName
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(downloadUrl)
+}
 
 function getSubmitButtonLabel(task: TaskDetail) {
   switch (task.currentStage.role) {
@@ -56,12 +79,21 @@ function getSubmitButtonLabel(task: TaskDetail) {
 }
 
 function getStageUploadRule(role: UserRole | null) {
-  if (role === 'cleaner' || role === 'annotator') {
+  if (role === 'cleaner') {
+    return {
+      acceptedExtensions: JSON_EXTENSIONS,
+      fileTypeHint: JSON_FILE_HINT,
+      description:
+        '清洗阶段只上传 JSON 清单文件。JSON 顶层必须是字符串数组，内容为初始 zip 中保留可用图片的文件名列表，例如 ["a.png", "b.png"]；若存在重名文件，再改用完整路径。',
+    }
+  }
+
+  if (role === 'annotator') {
     return {
       acceptedExtensions: ARCHIVE_EXTENSIONS,
       fileTypeHint: ARCHIVE_FILE_HINT,
       description:
-        '文件会先上传到临时区，点击完成后再正式挂到任务记录。当前阶段仅支持压缩包格式。',
+        '文件会先上传到临时区，点击完成后再正式挂到任务记录。标注阶段当前仅支持压缩包格式。',
     }
   }
 
@@ -99,6 +131,16 @@ function getTaskStatusTagStyle(canHandle: boolean) {
 }
 
 function getSubmitCardDescription(task: TaskDetail) {
+  if (task.currentStage.role === 'cleaner') {
+    const baseDescription = '上传 JSON 清单后，后端会按清单从初始 zip 中直接引用对应图片，动态生成清洗结果，不会重新上传重复图片。'
+
+    if (task.currentStageNeedsReview) {
+      return `${baseDescription} 提交后任务会进入等待管理员复核；若审核未通过，可重新上传修正后的 JSON 清单。`
+    }
+
+    return `${baseDescription} 提交后任务会自动流转到下一阶段。`
+  }
+
   if (task.currentStageNeedsReview) {
     return '上传当前阶段产物并填写备注后，任务会进入等待管理员复核；若审核未通过，可在当前阶段重新提交。'
   }
@@ -453,6 +495,21 @@ function TaskDetailDrawer({
                     acceptedExtensions={uploadRule.acceptedExtensions}
                     fileTypeHint={uploadRule.fileTypeHint}
                     uploadPurpose={uploadPurpose}
+                    extraActions={task.currentStage.role === 'cleaner' ? (
+                      <Button
+                        onClick={() => {
+                          // 示例模板由前端直接生成，避免为静态 JSON 额外增加后端下载接口。
+                          downloadTextFile(
+                            CLEANED_TEMPLATE_FILE_NAME,
+                            CLEANED_TEMPLATE_CONTENT,
+                            'application/json',
+                          )
+                        }}
+                        disabled={submitting}
+                      >
+                        下载示例模板
+                      </Button>
+                    ) : null}
                   />
                 ) : null}
 

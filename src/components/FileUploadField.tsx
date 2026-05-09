@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Button, Card, Progress, Spin, Typography, message } from 'antd'
 import { Uppy, Tus } from 'uppy'
 import { useEffect, useRef, useState } from 'react'
@@ -13,6 +14,7 @@ type FileUploadFieldProps = {
   acceptedExtensions?: string[]
   fileTypeHint?: string
   uploadPurpose?: UploadPurpose
+  extraActions?: ReactNode
 }
 
 type UploadState = {
@@ -81,6 +83,7 @@ function FileUploadField({
   acceptedExtensions,
   fileTypeHint,
   uploadPurpose,
+  extraActions,
 }: FileUploadFieldProps) {
   const [uploading, setUploading] = useState(false)
   const [uploadState, setUploadState] = useState<UploadState | null>(null)
@@ -282,6 +285,7 @@ function FileUploadField({
           >
             {value ? '重新上传' : '选择文件'}
           </Button>
+          {extraActions}
           {value ? (
             <Button
               type="link"
