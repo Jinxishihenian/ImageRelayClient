@@ -256,6 +256,7 @@ export async function getModelIterationDetail(
   modelIterationId: number,
   token: string,
 ): Promise<ModelIterationDetail> {
+  // 项目详情现在直接返回任务、模型结果和项目内数据集聚合，避免前端多发一次项目数据集请求。
   return request<ModelIterationDetail>(`/api/v1/model-iterations/${modelIterationId}`, {
     token,
   })

@@ -236,22 +236,6 @@ function ModelListPage() {
             </Typography.Text>
           </div>
 
-          <Search
-            value={searchInput}
-            allowClear
-            placeholder="请输入任务名称或模型文件名"
-            className="task-search-input"
-            onChange={(event) => {
-              const nextValue = event.target.value
-              setSearchInput(nextValue)
-
-              if (nextValue === '' && searchKeyword !== '') {
-                handleSearch('')
-              }
-            }}
-            onSearch={handleSearch}
-          />
-
           <Select
             allowClear
             placeholder="按项目筛选"
@@ -272,6 +256,24 @@ function ModelListPage() {
               void loadModels(1, searchKeyword, value)
             }}
           />
+
+          <Search
+            value={searchInput}
+            allowClear
+            placeholder="请输入任务名称或模型文件名"
+            className="task-search-input"
+            onChange={(event) => {
+              const nextValue = event.target.value
+              setSearchInput(nextValue)
+
+              if (nextValue === '' && searchKeyword !== '') {
+                handleSearch('')
+              }
+            }}
+            onSearch={handleSearch}
+          />
+
+
         </div>
 
         <div ref={tableContainerRef} className="table-scroll-host">

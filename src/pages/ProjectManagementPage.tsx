@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Drawer,
   Form,
   Input,
   Modal,
@@ -11,11 +12,11 @@ import {
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { createModelIteration, getModelIterations } from '../api/client'
+import { createModelIteration, getModelIterationDetail, getModelIterations } from '../api/client'
+import ProjectDetailContent from '../components/ProjectDetailContent'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
-import type { ModelIterationSummary } from '../types/models'
+import type { ModelIterationDetail, ModelIterationSummary } from '../types/models'
 
 const PAGE_SIZE = 10
 
@@ -38,7 +39,6 @@ function formatDate(value: string | null) {
 
 function ProjectManagementPage() {
   const { Search } = Input
-  const navigate = useNavigate()
   const { session } = useAuth()
   const { containerRef: tableContainerRef, scrollY } = useTableScrollY()
   const [form] = Form.useForm<CreateProjectFormValues>()
@@ -50,6 +50,11 @@ function ProjectManagementPage() {
   const [total, setTotal] = useState(0)
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [projectDetailOpen, setProjectDetailOpen] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
+  const [selectedProjectName, setSelectedProjectName] = useState<string | null>(null)
+  const [projectDetail, setProjectDetail] = useState<ModelIterationDetail | null>(null)
+  const [projectDetailLoading, setProjectDetailLoading] = useState(false)
   const [, startTransition] = useTransition()
 
   const loadProjects = useCallback(
@@ -90,6 +95,38 @@ function ProjectManagementPage() {
       void loadProjects(currentPage, searchKeyword)
     })
   }, [currentPage, loadProjects, searchKeyword])
+
+  const loadProjectDetail = useCallback(
+    async (projectId: number) => {
+      if (!session) {
+        return
+      }
+
+      setProjectDetailLoading(true)
+
+      try {
+        const response = await getModelIterationDetail(projectId, session.token)
+        startTransition(() => {
+          setProjectDetail(response)
+        })
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '项目详情加载失败')
+      } finally {
+        setProjectDetailLoading(false)
+      }
+    },
+    [session, startTransition],
+  )
+
+  useEffect(() => {
+    if (!projectDetailOpen || !selectedProjectId) {
+      return
+    }
+
+    queueMicrotask(() => {
+      void loadProjectDetail(selectedProjectId)
+    })
+  }, [projectDetailOpen, selectedProjectId, loadProjectDetail])
 
   const handleSearch = useCallback(
     (value: string) => {
@@ -186,7 +223,13 @@ function ProjectManagementPage() {
       key: 'actions',
       width: 120,
       render: (_value, record) => (
-        <Button onClick={() => navigate(`/projects/${record.id}`)}>
+        <Button
+          onClick={() => {
+            setSelectedProjectId(record.id)
+            setSelectedProjectName(record.name)
+            setProjectDetailOpen(true)
+          }}
+        >
           查看详情
         </Button>
       ),
@@ -267,6 +310,32 @@ function ProjectManagementPage() {
           />
         </div>
       </Card>
+
+      <Drawer
+        open={projectDetailOpen}
+        width={1280}
+        title={projectDetail?.name ?? selectedProjectName ?? '项目详情'}
+        onClose={() => {
+          setProjectDetailOpen(false)
+          setSelectedProjectId(null)
+          setSelectedProjectName(null)
+          setProjectDetail(null)
+        }}
+        destroyOnClose
+      >
+        {session ? (
+          <ProjectDetailContent
+            detail={projectDetail}
+            loading={projectDetailLoading}
+            token={session.token}
+            onDetailChange={(nextDetail) => {
+              startTransition(() => {
+                setProjectDetail(nextDetail)
+              })
+            }}
+          />
+        ) : null}
+      </Drawer>
 
       <Modal
         open={createOpen}

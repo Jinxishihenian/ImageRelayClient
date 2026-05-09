@@ -39,6 +39,26 @@ function getStageTagColor(stage: DatasetVersionSummary['stage']) {
   }
 }
 
+function formatVersionNo(versionNo: number | null | undefined) {
+  if (!versionNo) {
+    return '暂无'
+  }
+
+  return `v${versionNo}`
+}
+
+function formatCurrentVersion(record: DatasetSummary) {
+  if (!record.currentVersionNo) {
+    return '未设置'
+  }
+
+  if (!record.currentVersionStageLabel) {
+    return formatVersionNo(record.currentVersionNo)
+  }
+
+  return `${formatVersionNo(record.currentVersionNo)} / ${record.currentVersionStageLabel}`
+}
+
 function FileListPage() {
   const { Search } = Input
   const { session } = useAuth()
@@ -174,10 +194,9 @@ function FileListPage() {
     },
     {
       title: '当前版本',
-      dataIndex: 'currentVersionLabel',
-      key: 'currentVersionLabel',
-      width: 160,
-      render: (value: string | null) => value || '暂无',
+      key: 'currentVersion',
+      width: 180,
+      render: (_value, record) => formatCurrentVersion(record),
     },
     {
       title: '版本数量',
@@ -218,9 +237,9 @@ function FileListPage() {
   const versionColumns: TableColumnsType<DatasetVersionSummary> = [
     {
       title: '版本',
-      dataIndex: 'label',
-      key: 'label',
+      key: 'versionNo',
       width: 140,
+      render: (_value, record) => formatVersionNo(record.versionNo),
     },
     {
       title: '阶段',
@@ -245,10 +264,9 @@ function FileListPage() {
     },
     {
       title: '父版本',
-      dataIndex: 'parentVersionLabel',
-      key: 'parentVersionLabel',
+      key: 'parentVersion',
       width: 140,
-      render: (value: string | null) => value || '无',
+      render: (_value, record) => formatVersionNo(record.parentVersionNo) === '暂无' ? '无' : formatVersionNo(record.parentVersionNo),
     },
     {
       title: '创建人',
@@ -356,7 +374,7 @@ function FileListPage() {
           <div className="detail-stack">
             <Descriptions bordered size="small" column={2}>
               <Descriptions.Item label="所属任务">{detail.taskTitle}</Descriptions.Item>
-              <Descriptions.Item label="当前版本">{detail.currentVersionLabel || '暂无'}</Descriptions.Item>
+              <Descriptions.Item label="当前版本">{formatCurrentVersion(detail)}</Descriptions.Item>
               <Descriptions.Item label="模态">{detail.modality}</Descriptions.Item>
               <Descriptions.Item label="版本数量">{detail.versionCount}</Descriptions.Item>
               <Descriptions.Item label="创建人">{detail.creator.username}</Descriptions.Item>

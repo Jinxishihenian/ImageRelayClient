@@ -34,7 +34,7 @@ const roleTagTextColors: Record<UserRole, string> = {
 }
 
 function renderMenuIcon(Icon: LucideIcon) {
-  return <Icon size={17} strokeWidth={1.9} className="app-menu-icon" aria-hidden="true" />
+  return <Icon size={17} strokeWidth={1.9} className="app-menu-icon" aria-hidden="true"/>
 }
 
 function getMenuItems(isAdmin: boolean): MenuProps['items'] {
@@ -46,27 +46,27 @@ function getMenuItems(isAdmin: boolean): MenuProps['items'] {
     },
     ...(isAdmin
       ? [
-          {
-            key: '/datasets',
-            label: '数据集管理',
-            icon: renderMenuIcon(Database),
-          },
-          {
-            key: '/projects',
-            label: '项目管理',
-            icon: renderMenuIcon(FolderKanban),
-          },
-          {
-            key: '/models',
-            label: '模型列表',
-            icon: renderMenuIcon(Boxes),
-          },
-          {
-            key: '/users',
-            label: '用户管理',
-            icon: renderMenuIcon(Users),
-          },
-        ]
+        {
+          key: '/projects',
+          label: '项目管理',
+          icon: renderMenuIcon(FolderKanban),
+        },
+        {
+          key: '/datasets',
+          label: '数据集管理',
+          icon: renderMenuIcon(Database),
+        },
+        {
+          key: '/models',
+          label: '模型列表',
+          icon: renderMenuIcon(Boxes),
+        },
+        {
+          key: '/users',
+          label: '用户管理',
+          icon: renderMenuIcon(Users),
+        },
+      ]
       : []),
   ]
 }
@@ -171,7 +171,7 @@ function MainLayout() {
 
         <Layout.Content className="app-content">
           <div className="content-wrap">
-            <Outlet />
+            <Outlet/>
           </div>
         </Layout.Content>
       </Layout>

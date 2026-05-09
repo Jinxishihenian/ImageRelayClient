@@ -48,6 +48,7 @@ export type DatasetVersionSummary = {
   stageLabel: string
   label: string
   parentVersionId: number | null
+  parentVersionNo?: number | null
   parentVersionLabel: string | null
   reviewBased: boolean
   createdBy: TaskAssignee
@@ -59,6 +60,8 @@ export type DatasetVersionSummary = {
 export type DatasetSummary = {
   id: number
   taskId: number
+  projectId: number | null
+  projectName: string | null
   name: string
   description: string
   modality: string
@@ -67,6 +70,8 @@ export type DatasetSummary = {
   currentVersionId: number | null
   currentVersionLabel: string | null
   currentVersionNo: number | null
+  currentVersionStage: DatasetStage | null
+  currentVersionStageLabel: string | null
   versionCount: number
   createdAt: string
   updatedAt: string
@@ -167,6 +172,7 @@ export type ModelIterationDetail = {
   updatedAt: string
   tasks: ModelIterationTaskItem[]
   results: ModelIterationResultItem[]
+  datasets: DatasetSummary[]
   latestModelResult: ModelIterationResultItem | null
   currentBestResult: ModelIterationResultItem | null
 }
