@@ -11,7 +11,7 @@ import {
 } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { getDatasetDetail, getDatasets } from '../api/client'
+import { downloadDatasetVersionFile, getDatasetDetail, getDatasets } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import { useTableScrollY } from '../hooks/useTableScrollY'
 import type { DatasetDetail, DatasetSummary, DatasetVersionSummary } from '../types/models'
@@ -73,6 +73,7 @@ function FileListPage() {
   const [selectedDatasetId, setSelectedDatasetId] = useState<number | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detail, setDetail] = useState<DatasetDetail | null>(null)
+  const [downloadingVersionId, setDownloadingVersionId] = useState<number | null>(null)
   const [, startTransition] = useTransition()
 
   const loadDatasets = useCallback(
@@ -228,7 +229,7 @@ function FileListPage() {
             setDetailOpen(true)
           }}
         >
-          查看详情
+          版本列表
         </Button>
       ),
     },
@@ -286,6 +287,37 @@ function FileListPage() {
       key: 'reviewBased',
       width: 120,
       render: (_value, record) => (record.reviewBased ? '审核通过后生成' : '提交即生成'),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 120,
+      render: (_value, record) => (
+        <Button
+          loading={downloadingVersionId === record.id}
+          onClick={() => {
+            if (!session || !detail) {
+              return
+            }
+
+            setDownloadingVersionId(record.id)
+
+            // 使用 dataset/version 路径实时拼装下载 endpoint，避免详情接口额外冗余下载字段。
+            void downloadDatasetVersionFile(
+              `/api/v1/datasets/${detail.id}/versions/${record.id}/download`,
+              session.token,
+            )
+              .catch((error) => {
+                message.error(error instanceof Error ? error.message : '数据集版本下载失败')
+              })
+              .finally(() => {
+                setDownloadingVersionId(null)
+              })
+          }}
+        >
+          下载
+        </Button>
+      ),
     },
   ]
 
@@ -360,7 +392,8 @@ function FileListPage() {
 
       <Drawer
         open={detailOpen}
-        width={820}
+        // 版本列表表格列较多，适当加宽侧边栏以减少内容拥挤和换行。
+        width={960}
         title={detail?.name ?? '数据集详情'}
         onClose={() => {
           setDetailOpen(false)

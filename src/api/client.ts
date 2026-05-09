@@ -555,6 +555,35 @@ export async function getTaskFileDownloadLink(
   }
 }
 
+export async function downloadDatasetVersionFile(
+  endpoint: string,
+  token: string,
+): Promise<void> {
+  // 数据集版本文件同样可能较大，复用临时签名链接 + 浏览器原生下载，避免 fetch 持有整块内存。
+  const { url } = await getDatasetVersionDownloadLink(`${endpoint}-link`, token)
+  const anchor = document.createElement('a')
+
+  anchor.href = url
+  anchor.rel = 'noopener'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+}
+
+export async function getDatasetVersionDownloadLink(
+  endpoint: string,
+  token: string,
+): Promise<TaskDownloadLink> {
+  const payload = await request<TaskDownloadLink>(endpoint, {
+    token,
+  })
+
+  return {
+    ...payload,
+    url: resolveDownloadUrl(payload.url),
+  }
+}
+
 export async function getTaskFilePreviewPage(
   endpoint: string,
   token: string,
