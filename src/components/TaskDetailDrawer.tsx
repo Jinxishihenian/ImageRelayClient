@@ -507,7 +507,7 @@ function TaskDetailDrawer({
                         }}
                         disabled={submitting}
                       >
-                        下载示例模板
+                        下载示例
                       </Button>
                     ) : null}
                   />
