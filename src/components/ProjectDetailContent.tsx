@@ -368,170 +368,172 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
 
   return (
     <>
-      <Card className="panel-card" loading={loading}>
-        {detail ? (
-          <Descriptions bordered size="small" column={2}>
-            <Descriptions.Item label="项目状态">
-              <Tag
-                bordered={false}
-                className="status-tag"
-                color={detail.status === 'active' ? '#E6F4FF' : '#FAFAFA'}
-                style={{ color: detail.status === 'active' ? '#1677FF' : '#4E5969' }}
-              >
-                {detail.statusLabel}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="创建人">{detail.creator.username}</Descriptions.Item>
-            <Descriptions.Item label="基线模型">{detail.baseModelName}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{formatDate(detail.createdAt)}</Descriptions.Item>
-            <Descriptions.Item label="本轮目标" span={2}>
-              {detail.goal}
-            </Descriptions.Item>
-            <Descriptions.Item label="项目描述" span={2}>
-              {detail.description || '暂无描述'}
-            </Descriptions.Item>
-            <Descriptions.Item label="最近一次训练结果" span={2}>
-              {detail.latestModelResult
-                ? `${detail.latestModelResult.taskTitle} / ${detail.latestModelResult.modelFileName}`
-                : '暂无'}
-            </Descriptions.Item>
-            <Descriptions.Item label="当前最佳结果" span={2}>
-              {detail.currentBestResult
-                ? `${detail.currentBestResult.taskTitle} / ${detail.currentBestResult.modelFileName}`
-                : '暂无'}
-            </Descriptions.Item>
-          </Descriptions>
-        ) : null}
-      </Card>
+      <div className="detail-stack">
+        <Card className="panel-card" loading={loading}>
+          {detail ? (
+            <Descriptions bordered size="small" column={2}>
+              <Descriptions.Item label="项目状态">
+                <Tag
+                  bordered={false}
+                  className="status-tag"
+                  color={detail.status === 'active' ? '#E6F4FF' : '#FAFAFA'}
+                  style={{ color: detail.status === 'active' ? '#1677FF' : '#4E5969' }}
+                >
+                  {detail.statusLabel}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="创建人">{detail.creator.username}</Descriptions.Item>
+              <Descriptions.Item label="基线模型">{detail.baseModelName}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{formatDate(detail.createdAt)}</Descriptions.Item>
+              <Descriptions.Item label="本轮目标" span={2}>
+                {detail.goal}
+              </Descriptions.Item>
+              <Descriptions.Item label="项目描述" span={2}>
+                {detail.description || '暂无描述'}
+              </Descriptions.Item>
+              <Descriptions.Item label="最近一次训练结果" span={2}>
+                {detail.latestModelResult
+                  ? `${detail.latestModelResult.taskTitle} / ${detail.latestModelResult.modelFileName}`
+                  : '暂无'}
+              </Descriptions.Item>
+              <Descriptions.Item label="当前最佳结果" span={2}>
+                {detail.currentBestResult
+                  ? `${detail.currentBestResult.taskTitle} / ${detail.currentBestResult.modelFileName}`
+                  : '暂无'}
+              </Descriptions.Item>
+            </Descriptions>
+          ) : null}
+        </Card>
 
-      <Card className="panel-card page-table-card">
-        <Tabs
-          defaultActiveKey="overview"
-          items={[
-            {
-              key: 'overview',
-              label: '概览',
-              children: (
-                <Descriptions bordered size="small" column={2}>
-                  <Descriptions.Item label="项目状态">
-                    <Tag
-                      bordered={false}
-                      className="status-tag"
-                      color={detail?.status === 'active' ? '#E6F4FF' : '#FAFAFA'}
-                      style={{ color: detail?.status === 'active' ? '#1677FF' : '#4E5969' }}
-                    >
-                      {detail?.statusLabel || '暂无'}
-                    </Tag>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="项目数据集数量">
-                    {detail?.datasets.length ?? 0}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="任务数量">
-                    {detail?.tasks.length ?? 0}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="模型结果数量">
-                    {detail?.results.length ?? 0}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="最近一次训练结果" span={2}>
-                    {detail?.latestModelResult
-                      ? `${detail.latestModelResult.taskTitle} / ${detail.latestModelResult.modelFileName}`
-                      : '暂无'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="当前最佳结果" span={2}>
-                    {detail?.currentBestResult
-                      ? `${detail.currentBestResult.taskTitle} / ${detail.currentBestResult.modelFileName}`
-                      : '暂无'}
-                  </Descriptions.Item>
-                </Descriptions>
-              ),
-            },
-            {
-              key: 'tasks',
-              label: '项目任务',
-              children: (
-                <>
-                  <div className="table-card-toolbar">
-                    <div className="toolbar-copy">
-                      <Typography.Title level={5}>项目任务</Typography.Title>
-                      <Typography.Text className="muted-text">
-                        查看该项目下全部任务的当前状态与负责人。
-                      </Typography.Text>
+        <Card className="panel-card page-table-card">
+          <Tabs
+            defaultActiveKey="overview"
+            items={[
+              {
+                key: 'overview',
+                label: '概览',
+                children: (
+                  <Descriptions bordered size="small" column={2}>
+                    <Descriptions.Item label="项目状态">
+                      <Tag
+                        bordered={false}
+                        className="status-tag"
+                        color={detail?.status === 'active' ? '#E6F4FF' : '#FAFAFA'}
+                        style={{ color: detail?.status === 'active' ? '#1677FF' : '#4E5969' }}
+                      >
+                        {detail?.statusLabel || '暂无'}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="项目数据集数量">
+                      {detail?.datasets.length ?? 0}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="任务数量">
+                      {detail?.tasks.length ?? 0}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="模型结果数量">
+                      {detail?.results.length ?? 0}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="最近一次训练结果" span={2}>
+                      {detail?.latestModelResult
+                        ? `${detail.latestModelResult.taskTitle} / ${detail.latestModelResult.modelFileName}`
+                        : '暂无'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="当前最佳结果" span={2}>
+                      {detail?.currentBestResult
+                        ? `${detail.currentBestResult.taskTitle} / ${detail.currentBestResult.modelFileName}`
+                        : '暂无'}
+                    </Descriptions.Item>
+                  </Descriptions>
+                ),
+              },
+              {
+                key: 'tasks',
+                label: '项目任务',
+                children: (
+                  <>
+                    <div className="table-card-toolbar">
+                      <div className="toolbar-copy">
+                        <Typography.Title level={5}>项目任务</Typography.Title>
+                        <Typography.Text className="muted-text">
+                          查看该项目下全部任务的当前状态与负责人。
+                        </Typography.Text>
+                      </div>
                     </div>
-                  </div>
 
-                  <div ref={taskTableRef} className="table-scroll-host">
-                    <Table<ModelIterationTaskItem>
-                      rowKey="id"
-                      loading={loading}
-                      columns={taskColumns}
-                      dataSource={detail?.tasks ?? []}
-                      scroll={taskScrollY ? { y: taskScrollY } : undefined}
-                      pagination={false}
-                      locale={{ emptyText: '当前项目暂无任务' }}
-                    />
-                  </div>
-                </>
-              ),
-            },
-            {
-              key: 'results',
-              label: '模型结果',
-              children: (
-                <>
-                  <div className="table-card-toolbar">
-                    <div className="toolbar-copy">
-                      <Typography.Title level={5}>模型结果</Typography.Title>
-                      <Typography.Text className="muted-text">
-                        聚合展示该项目下已完成任务的模型文件，并支持标记当前最佳结果。
-                      </Typography.Text>
+                    <div ref={taskTableRef} className="table-scroll-host">
+                      <Table<ModelIterationTaskItem>
+                        rowKey="id"
+                        loading={loading}
+                        columns={taskColumns}
+                        dataSource={detail?.tasks ?? []}
+                        scroll={taskScrollY ? { y: taskScrollY } : undefined}
+                        pagination={false}
+                        locale={{ emptyText: '当前项目暂无任务' }}
+                      />
                     </div>
-                  </div>
-
-                  <div ref={resultTableRef} className="table-scroll-host">
-                    <Table<ModelIterationResultItem>
-                      rowKey="taskId"
-                      loading={loading}
-                      columns={resultColumns}
-                      dataSource={detail?.results ?? []}
-                      scroll={resultScrollY ? { y: resultScrollY } : undefined}
-                      pagination={false}
-                      locale={{ emptyText: '当前项目暂无模型结果' }}
-                    />
-                  </div>
-                </>
-              ),
-            },
-            {
-              key: 'datasets',
-              label: '数据集',
-              children: (
-                <>
-                  <div className="table-card-toolbar">
-                    <div className="toolbar-copy">
-                      <Typography.Title level={5}>项目数据集</Typography.Title>
-                      <Typography.Text className="muted-text">
-                        聚合查看当前项目下各任务自动沉淀的数据集及其版本状态。
-                      </Typography.Text>
+                  </>
+                ),
+              },
+              {
+                key: 'results',
+                label: '模型结果',
+                children: (
+                  <>
+                    <div className="table-card-toolbar">
+                      <div className="toolbar-copy">
+                        <Typography.Title level={5}>模型结果</Typography.Title>
+                        <Typography.Text className="muted-text">
+                          聚合展示该项目下已完成任务的模型文件，并支持标记当前最佳结果。
+                        </Typography.Text>
+                      </div>
                     </div>
-                  </div>
 
-                  <div ref={datasetTableRef} className="table-scroll-host">
-                    <Table<DatasetSummary>
-                      rowKey="id"
-                      loading={loading}
-                      columns={datasetColumns}
-                      dataSource={detail?.datasets ?? []}
-                      scroll={datasetScrollY ? { y: datasetScrollY } : undefined}
-                      pagination={false}
-                      locale={{ emptyText: '当前项目暂无数据集' }}
-                    />
-                  </div>
-                </>
-              ),
-            },
-          ]}
-        />
-      </Card>
+                    <div ref={resultTableRef} className="table-scroll-host">
+                      <Table<ModelIterationResultItem>
+                        rowKey="taskId"
+                        loading={loading}
+                        columns={resultColumns}
+                        dataSource={detail?.results ?? []}
+                        scroll={resultScrollY ? { y: resultScrollY } : undefined}
+                        pagination={false}
+                        locale={{ emptyText: '当前项目暂无模型结果' }}
+                      />
+                    </div>
+                  </>
+                ),
+              },
+              {
+                key: 'datasets',
+                label: '数据集',
+                children: (
+                  <>
+                    <div className="table-card-toolbar">
+                      <div className="toolbar-copy">
+                        <Typography.Title level={5}>项目数据集</Typography.Title>
+                        <Typography.Text className="muted-text">
+                          聚合查看当前项目下各任务自动沉淀的数据集及其版本状态。
+                        </Typography.Text>
+                      </div>
+                    </div>
+
+                    <div ref={datasetTableRef} className="table-scroll-host">
+                      <Table<DatasetSummary>
+                        rowKey="id"
+                        loading={loading}
+                        columns={datasetColumns}
+                        dataSource={detail?.datasets ?? []}
+                        scroll={datasetScrollY ? { y: datasetScrollY } : undefined}
+                        pagination={false}
+                        locale={{ emptyText: '当前项目暂无数据集' }}
+                      />
+                    </div>
+                  </>
+                ),
+              },
+            ]}
+          />
+        </Card>
+      </div>
 
       <Drawer
         open={datasetDetailOpen}

@@ -249,7 +249,7 @@ function TaskDetailDrawer({
       {!task ? (
         <Empty description="暂无任务详情" />
       ) : (
-        <div className="detail-stack">
+        <div className="detail-stack task-detail-stack">
           <Descriptions
             className="drawer-descriptions"
             bordered

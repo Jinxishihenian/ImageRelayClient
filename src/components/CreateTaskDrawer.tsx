@@ -59,6 +59,14 @@ function CreateTaskDrawer({
   const [submitting, setSubmitting] = useState(false)
   const [sourceFile, setSourceFile] = useState<UploadedFileRef | null>(null)
 
+  const handleClose = () => {
+    // 统一收口所有关闭路径，避免“取消”或“创建成功后关闭”绕过 Drawer.onClose，
+    // 导致下次打开抽屉时仍然保留上一次输入和上传结果。
+    form.resetFields()
+    setSourceFile(null)
+    onClose()
+  }
+
   if (!session) {
     return null
   }
@@ -68,15 +76,11 @@ function CreateTaskDrawer({
       open={open}
       width={520}
       title="创建任务"
-      onClose={() => {
-        form.resetFields()
-        setSourceFile(null)
-        onClose()
-      }}
+      onClose={handleClose}
       destroyOnClose
       extra={
         <Space>
-          <Button onClick={onClose}>取消</Button>
+          <Button onClick={handleClose}>取消</Button>
           <Button
             type="primary"
             loading={submitting}
@@ -124,7 +128,7 @@ function CreateTaskDrawer({
 
             message.success('任务创建成功')
             onCreated(task)
-            onClose()
+            handleClose()
           } catch (error) {
             message.error(error instanceof Error ? error.message : '任务创建失败')
           } finally {

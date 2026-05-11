@@ -310,6 +310,11 @@ h6 {
   gap: var(--spacing-lg);
 }
 
+.task-detail-stack {
+  /* 任务详情抽屉里的信息块更密集，单独拉开间距，避免与全局详情抽屉节奏互相影响。 */
+  gap: 20px;
+}
+
 .page-fill {
   flex: 1;
   min-height: 0;
