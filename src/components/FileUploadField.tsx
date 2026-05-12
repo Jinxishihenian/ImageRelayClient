@@ -10,6 +10,7 @@ type FileUploadFieldProps = {
   token: string
   value: UploadedFileRef | null
   onChange: (value: UploadedFileRef | null) => void
+  onUploadingChange?: (uploading: boolean) => void
   description?: string
   acceptedExtensions?: string[]
   fileTypeHint?: string
@@ -24,6 +25,25 @@ type UploadState = {
 
 type UppyUploadSuccessResponse = {
   uploadURL?: string
+}
+
+type UppyFileUpload = {
+  name: string
+  type: string
+  data: File
+  meta: {
+    originalName: string
+    mimeType: string
+    purpose: string
+  }
+}
+
+type UppyLike = {
+  use: (plugin: typeof Tus, options: Record<string, unknown>) => void
+  on: (eventName: string, handler: (...args: any[]) => void) => void
+  addFile: (file: UppyFileUpload) => void
+  cancelAll: () => void
+  destroy: () => void
 }
 
 function normalizeExtension(extension: string) {
@@ -79,6 +99,7 @@ function FileUploadField({
   token,
   value,
   onChange,
+  onUploadingChange,
   description,
   acceptedExtensions,
   fileTypeHint,
@@ -88,7 +109,8 @@ function FileUploadField({
   const [uploading, setUploading] = useState(false)
   const [uploadState, setUploadState] = useState<UploadState | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const uppyRef = useRef<any>(null)
+  const uppyRef = useRef<UppyLike | null>(null)
+  const uploadAttemptIdRef = useRef(0)
   const normalizedAcceptedExtensions = (acceptedExtensions ?? [])
     .map(normalizeExtension)
     .filter(Boolean)
@@ -98,7 +120,13 @@ function FileUploadField({
       : undefined
 
   useEffect(() => {
+    onUploadingChange?.(uploading)
+  }, [onUploadingChange, uploading])
+
+  useEffect(() => {
     return () => {
+      // 组件卸载时推进 attempt id，避免晚到的异步回调再把旧结果写回外层表单。
+      uploadAttemptIdRef.current += 1
       void uppyRef.current?.cancelAll()
       uppyRef.current?.destroy()
       uppyRef.current = null
@@ -169,19 +197,25 @@ function FileUploadField({
                 }
               }
 
+              // 重新上传同名文件时，旧的 tmp 引用可能已经被上一轮创建/保存消费掉。
+              // 这里先清空外层值，强制后续提交只能依赖本次上传完成后回写的新引用。
+              onChange(null)
               setUploading(true)
               setUploadState({
                 fileName: file.name,
                 progress: 0,
               })
+              uploadAttemptIdRef.current += 1
+              const currentUploadAttemptId = uploadAttemptIdRef.current
 
               const currentUppy = new Uppy({
                 autoProceed: true,
                 restrictions: {
                   maxNumberOfFiles: 1,
                 },
-              }) as any
+              }) as unknown as UppyLike
 
+              void uppyRef.current?.cancelAll()
               uppyRef.current?.destroy()
               uppyRef.current = currentUppy
 
@@ -192,10 +226,10 @@ function FileUploadField({
                 },
                 chunkSize: 5 * 1024 * 1024,
                 retryDelays: [0, 1000, 3000, 5000],
-                // 这里显式关闭基于 fingerprint 的历史上传恢复。
+                // 关闭基于 fingerprint 的历史上传恢复。
                 // 否则同名同内容文件再次上传时，Tus 可能直接复用旧会话，
-                // 前端拿到的仍是上一次 finalize 后的旧 tmp 引用，进而触发
-                // “上传文件不存在或已失效”的误报。
+                // 前端拿到的仍然是上一次 finalize 后的旧 tmp 引用，
+                // 进而触发“上传文件不存在或已失效”的误报。
                 storeFingerprintForResuming: false,
                 // 即便未来重新打开断点续传，这里也保留成功后清理 fingerprint，
                 // 避免完成上传的会话继续污染后续“重新上传同一文件”的流程。
@@ -207,6 +241,10 @@ function FileUploadField({
                 bytesUploaded: number
                 bytesTotal: number | null
               }) => {
+                if (uploadAttemptIdRef.current !== currentUploadAttemptId) {
+                  return
+                }
+
                 setUploadState((current) =>
                   current
                     ? (() => {
@@ -231,6 +269,11 @@ function FileUploadField({
                   response: UppyUploadSuccessResponse,
                 ) => {
                   try {
+                    // 只允许最新一次上传事务落盘；旧回调即使晚返回，也不能覆盖新上传结果。
+                    if (uploadAttemptIdRef.current !== currentUploadAttemptId) {
+                      return
+                    }
+
                     const uploadId = response.uploadURL
                       ? extractUploadIdFromUrl(response.uploadURL)
                       : ''
@@ -240,15 +283,27 @@ function FileUploadField({
                     }
 
                     const uploaded = await finalizeChunkUpload(uploadId, token)
+
+                    if (uploadAttemptIdRef.current !== currentUploadAttemptId) {
+                      return
+                    }
+
                     onChange(uploaded)
                     message.success(`${file.name} 上传成功`)
                   } catch (error) {
+                    if (uploadAttemptIdRef.current !== currentUploadAttemptId) {
+                      return
+                    }
+
                     message.error(
                       error instanceof Error ? error.message : '文件上传完成确认失败',
                     )
                   } finally {
-                    setUploading(false)
-                    setUploadState(null)
+                    if (uploadAttemptIdRef.current === currentUploadAttemptId) {
+                      setUploading(false)
+                      setUploadState(null)
+                    }
+
                     event.target.value = ''
                     currentUppy.destroy()
                     if (uppyRef.current === currentUppy) {
@@ -259,17 +314,33 @@ function FileUploadField({
               )
 
               currentUppy.on('error', (error: unknown) => {
+                if (uploadAttemptIdRef.current !== currentUploadAttemptId) {
+                  return
+                }
+
                 message.error(error instanceof Error ? error.message : '文件上传失败')
                 setUploading(false)
                 setUploadState(null)
                 event.target.value = ''
+                currentUppy.destroy()
+                if (uppyRef.current === currentUppy) {
+                  uppyRef.current = null
+                }
               })
 
               currentUppy.on('upload-error', (_file: unknown, error: unknown) => {
+                if (uploadAttemptIdRef.current !== currentUploadAttemptId) {
+                  return
+                }
+
                 message.error(error instanceof Error ? error.message : '文件上传失败')
                 setUploading(false)
                 setUploadState(null)
                 event.target.value = ''
+                currentUppy.destroy()
+                if (uppyRef.current === currentUppy) {
+                  uppyRef.current = null
+                }
               })
 
               currentUppy.addFile({

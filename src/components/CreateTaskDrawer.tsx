@@ -10,7 +10,7 @@ import {
   message,
 } from 'antd'
 import { useState } from 'react'
-import { createTask } from '../api/client'
+import { ApiError, createTask } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import type {
   ModelIterationSummary,
@@ -58,12 +58,14 @@ function CreateTaskDrawer({
   const { session } = useAuth()
   const [submitting, setSubmitting] = useState(false)
   const [sourceFile, setSourceFile] = useState<UploadedFileRef | null>(null)
+  const [sourceUploading, setSourceUploading] = useState(false)
 
   const handleClose = () => {
     // 统一收口所有关闭路径，避免“取消”或“创建成功后关闭”绕过 Drawer.onClose，
-    // 导致下次打开抽屉时仍然保留上一次输入和上传结果。
+    // 导致下次打开抽屉时仍然残留上一次输入和上传结果。
     form.resetFields()
     setSourceFile(null)
+    setSourceUploading(false)
     onClose()
   }
 
@@ -84,6 +86,7 @@ function CreateTaskDrawer({
           <Button
             type="primary"
             loading={submitting}
+            disabled={sourceUploading}
             onClick={() => {
               void form.submit()
             }}
@@ -102,6 +105,11 @@ function CreateTaskDrawer({
         form={form}
         layout="vertical"
         onFinish={async (values) => {
+          if (sourceUploading) {
+            message.warning('初始文件仍在上传中，请等待上传完成后再创建任务')
+            return
+          }
+
           if (!sourceFile) {
             message.warning('请先上传初始文件')
             return
@@ -130,6 +138,11 @@ function CreateTaskDrawer({
             onCreated(task)
             handleClose()
           } catch (error) {
+            if (error instanceof ApiError && error.message.includes('上传文件不存在或已失效')) {
+              message.error('初始文件上传引用已失效，请重新上传文件后再创建任务')
+              return
+            }
+
             message.error(error instanceof Error ? error.message : '任务创建失败')
           } finally {
             setSubmitting(false)
@@ -156,7 +169,7 @@ function CreateTaskDrawer({
           name="title"
           rules={[{ required: true, message: '请输入任务名称' }]}
         >
-          <Input placeholder="例如：4 月图像样本标注批次" />
+          <Input placeholder="例如：月图图像样本标注批次" />
         </Form.Item>
 
         <Form.Item label="任务描述" name="description">
@@ -205,6 +218,7 @@ function CreateTaskDrawer({
         acceptedExtensions={ARCHIVE_EXTENSIONS}
         fileTypeHint={ARCHIVE_FILE_HINT}
         uploadPurpose="task_source"
+        onUploadingChange={setSourceUploading}
       />
     </Drawer>
   )

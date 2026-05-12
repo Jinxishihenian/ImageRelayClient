@@ -66,6 +66,25 @@ function buildQueryString(
   return queryString ? `?${queryString}` : ''
 }
 
+function appendQueryString(
+  path: string,
+  params: Record<string, string | number | boolean | undefined>,
+): string {
+  const queryString = buildQueryString(params)
+
+  if (!queryString) {
+    return path
+  }
+
+  // 某些预览接口的 endpoint 本身已经带有 stage 等查询参数，继续追加分页时必须使用 &，
+  // 否则会把 ?page=1 拼进前一个参数值里，最终导致后端收到类似 clean?page=1 的脏值。
+  if (path.includes('?')) {
+    return `${path}&${queryString.slice(1)}`
+  }
+
+  return `${path}${queryString}`
+}
+
 export class ApiError extends Error {
   status: number
 
@@ -636,10 +655,10 @@ export async function getTaskFilePreviewPage(
   },
 ): Promise<TaskArchivePreviewPage> {
   return request<TaskArchivePreviewPage>(
-    `${endpoint}${buildQueryString({
+    appendQueryString(endpoint, {
       page: options?.page,
       pageSize: options?.pageSize,
-    })}`,
+    }),
     {
       token,
     },
