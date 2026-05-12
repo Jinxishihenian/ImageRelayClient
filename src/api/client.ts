@@ -418,14 +418,29 @@ export async function deleteTask(taskId: number, token: string): Promise<void> {
 
 export async function completeTaskStage(
   taskId: number,
+  token: string,
+): Promise<TaskDetail | null> {
+  const response = await request<{ item: TaskDetail | null }>(
+    `/api/v1/tasks/${taskId}/complete-stage`,
+    {
+      method: 'POST',
+      token,
+    },
+  )
+
+  return response.item
+}
+
+export async function saveTaskStageDraft(
+  taskId: number,
   payload: {
-    file: UploadedFileRef
+    file?: UploadedFileRef | null
     remark: string
   },
   token: string,
 ): Promise<TaskDetail | null> {
   const response = await request<{ item: TaskDetail | null }>(
-    `/api/v1/tasks/${taskId}/complete-stage`,
+    `/api/v1/tasks/${taskId}/save-stage-draft`,
     {
       method: 'POST',
       token,
@@ -542,6 +557,34 @@ export async function downloadTaskFile(
 }
 
 export async function getTaskFileDownloadLink(
+  endpoint: string,
+  token: string,
+): Promise<TaskDownloadLink> {
+  const payload = await request<TaskDownloadLink>(endpoint, {
+    token,
+  })
+
+  return {
+    ...payload,
+    url: resolveDownloadUrl(payload.url),
+  }
+}
+
+export async function downloadTaskStageDraft(
+  endpoint: string,
+  token: string,
+): Promise<void> {
+  const { url } = await getTaskStageDraftDownloadLink(endpoint, token)
+  const anchor = document.createElement('a')
+
+  anchor.href = url
+  anchor.rel = 'noopener'
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+}
+
+export async function getTaskStageDraftDownloadLink(
   endpoint: string,
   token: string,
 ): Promise<TaskDownloadLink> {

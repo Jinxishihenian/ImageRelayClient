@@ -315,6 +315,29 @@ h6 {
   gap: 20px;
 }
 
+.detail-label-with-tooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail-label-tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  cursor: help;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transform: translateY(1px);
+  transition: color 0.2s ease;
+}
+
+.detail-label-tooltip-icon:hover {
+  color: var(--color-primary);
+}
+
 .page-fill {
   flex: 1;
   min-height: 0;

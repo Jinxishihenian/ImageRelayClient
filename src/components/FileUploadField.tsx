@@ -6,7 +6,7 @@ import { finalizeChunkUpload } from '../api/client'
 import type { UploadedFileRef, UploadPurpose } from '../types/models'
 
 type FileUploadFieldProps = {
-  label: string
+  label: ReactNode
   token: string
   value: UploadedFileRef | null
   onChange: (value: UploadedFileRef | null) => void

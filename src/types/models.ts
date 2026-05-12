@@ -248,6 +248,20 @@ export type TaskDownloadLink = {
   expiresAt: string
 }
 
+export type TaskStageDraft = {
+  stage: TaskReviewStage
+  storageKey: string
+  fileName: string
+  size: number
+  remark: string | null
+  savedAt: string | null
+  ready: boolean
+  canPreview: boolean
+  previewEndpoint: string | null
+  downloadEndpoint: string
+  downloadLinkEndpoint: string
+}
+
 export type TaskDetail = TaskSummary & {
   remarks: {
     cleaner: string | null
@@ -255,6 +269,9 @@ export type TaskDetail = TaskSummary & {
     trainer: string | null
   }
   downloads: TaskDownload[]
+  currentStageDraft: TaskStageDraft | null
+  hasCurrentStageDraft: boolean
+  canSaveCurrentStageDraft: boolean
   canSubmitCurrentStage: boolean
   canReviewCurrentStage: boolean
   canResubmitCurrentStage: boolean
