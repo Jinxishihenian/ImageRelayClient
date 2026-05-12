@@ -14,7 +14,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import {
   saveTaskStageDraft,
   completeTaskStage,
@@ -244,6 +244,7 @@ function TaskDetailDrawer({
                             onTaskChanged,
                           }: TaskDetailDrawerProps) {
   const { session } = useAuth()
+  const detailRequestIdRef = useRef(0)
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [task, setTask] = useState<TaskDetail | null>(null)
@@ -267,6 +268,9 @@ function TaskDetailDrawer({
       return
     }
 
+    const requestId = detailRequestIdRef.current + 1
+    detailRequestIdRef.current = requestId
+
     queueMicrotask(() => {
       setLoading(true)
       setRemark('')
@@ -275,6 +279,10 @@ function TaskDetailDrawer({
 
       void getTaskDetail(taskId, session.token)
         .then((detail) => {
+          if (detailRequestIdRef.current !== requestId) {
+            return
+          }
+
           startTransition(() => {
             setTask(detail)
           })
@@ -282,10 +290,16 @@ function TaskDetailDrawer({
           setUploadedFile(mapDraftToUploadedFile(detail.currentStageDraft))
         })
         .catch((error) => {
+          if (detailRequestIdRef.current !== requestId) {
+            return
+          }
+
           message.error(error instanceof Error ? error.message : '任务详情加载失败')
         })
         .finally(() => {
-          setLoading(false)
+          if (detailRequestIdRef.current === requestId) {
+            setLoading(false)
+          }
         })
     })
   }, [open, session, startTransition, taskId])
@@ -296,6 +310,7 @@ function TaskDetailDrawer({
       title={task ? task.title : '任务详情'}
       width={620}
       onClose={() => {
+        detailRequestIdRef.current += 1
         setTask(null)
         setRemark('')
         setUploadedFile(null)

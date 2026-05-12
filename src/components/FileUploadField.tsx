@@ -192,6 +192,14 @@ function FileUploadField({
                 },
                 chunkSize: 5 * 1024 * 1024,
                 retryDelays: [0, 1000, 3000, 5000],
+                // 这里显式关闭基于 fingerprint 的历史上传恢复。
+                // 否则同名同内容文件再次上传时，Tus 可能直接复用旧会话，
+                // 前端拿到的仍是上一次 finalize 后的旧 tmp 引用，进而触发
+                // “上传文件不存在或已失效”的误报。
+                storeFingerprintForResuming: false,
+                // 即便未来重新打开断点续传，这里也保留成功后清理 fingerprint，
+                // 避免完成上传的会话继续污染后续“重新上传同一文件”的流程。
+                removeFingerprintOnSuccess: true,
                 allowedMetaFields: ['originalName', 'mimeType', 'purpose'],
               })
 
