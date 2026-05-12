@@ -217,8 +217,10 @@ function QuestionCircleOutlined({ className }: { className?: string }) {
   return (
     <span className={className} role="img" aria-label="question-circle">
       <svg viewBox="64 64 896 896" focusable="false" aria-hidden="true">
-        <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/>
-        <path d="M623.6 316.7C593.6 290.4 554 276 512 276s-81.6 14.5-111.6 40.7C369.2 344 352 380.7 352 420v7.6c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V420c0-44.1 43.1-80 96-80s96 35.9 96 80c0 31.1-22 59.6-56.1 72.7-21.2 8.1-39.2 22.3-52.1 40.9-13.1 19-19.9 41.8-19.9 64.9V620c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8v-22.7a48.3 48.3 0 0130.9-44.8c59-22.7 97.1-74.7 97.1-132.5.1-39.3-17.1-76-48.3-103.3zM472 732a40 40 0 1080 0 40 40 0 10-80 0z"/>
+        <path
+          d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"/>
+        <path
+          d="M623.6 316.7C593.6 290.4 554 276 512 276s-81.6 14.5-111.6 40.7C369.2 344 352 380.7 352 420v7.6c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V420c0-44.1 43.1-80 96-80s96 35.9 96 80c0 31.1-22 59.6-56.1 72.7-21.2 8.1-39.2 22.3-52.1 40.9-13.1 19-19.9 41.8-19.9 64.9V620c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8v-22.7a48.3 48.3 0 0130.9-44.8c59-22.7 97.1-74.7 97.1-132.5.1-39.3-17.1-76-48.3-103.3zM472 732a40 40 0 1080 0 40 40 0 10-80 0z"/>
       </svg>
     </span>
   )
@@ -535,239 +537,246 @@ function TaskDetailDrawer({
           </Card>
 
           {task.canSubmitCurrentStage ? (
-            <Card size="small" className="panel-card stage-submit-card">
-              <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                <Alert
-                  type="info"
-                  showIcon
-                  message={renderLabelWithTooltip(
-                    `当前阶段：${task.currentStage.label}`,
-                    getSubmitCardDescription(task),
-                  )}
-                />
 
-                {task.currentStageDraft ? (
-                  (() => {
-                    const currentStageDraft = task.currentStageDraft
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              <Alert
+                type="info"
+                showIcon
+                message={renderLabelWithTooltip(
+                  `当前阶段：${task.currentStage.label}`,
+                  getSubmitCardDescription(task),
+                )}
+              />
 
-                    return (
-                      <Card size="small">
-                    <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                      <Alert
-                        type="success"
-                        showIcon
-                        message="已存草稿"
-                        description={`已保存草稿：${currentStageDraft.fileName}${currentStageDraft.savedAt ? `，保存时间 ${new Date(currentStageDraft.savedAt).toLocaleString('zh-CN', { hour12: false })}` : ''}`}
-                      />
-                      <div className="remark-section">
-                        <Typography.Text strong>当前阶段草稿</Typography.Text>
-                        <Typography.Paragraph className="muted-paragraph">
-                          {currentStageDraft.fileName} · {`${currentStageDraft.size < 1024 ? `${currentStageDraft.size} B` : currentStageDraft.size < 1024 * 1024 ? `${(currentStageDraft.size / 1024).toFixed(1)} KB` : `${(currentStageDraft.size / (1024 * 1024)).toFixed(1)} MB`}`}
-                        </Typography.Paragraph>
-                      </div>
-                      {session ? (
-                        <Space wrap>
-                          {(() => {
-                            const previewEndpoint = currentStageDraft.previewEndpoint
+              {task.currentStageDraft ? (
+                (() => {
+                  const currentStageDraft = task.currentStageDraft
 
-                            return currentStageDraft.canPreview && previewEndpoint ? (
+                  return (
+                    <Card size="small">
+                      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                        {/*<Alert*/}
+                        {/*  type="success"*/}
+                        {/*  showIcon*/}
+                        {/*  message="已存草稿"*/}
+                        {/*  description={`已保存草稿：${currentStageDraft.fileName}${currentStageDraft.savedAt ? `，保存时间 ${new Date(currentStageDraft.savedAt).toLocaleString('zh-CN', { hour12: false })}` : ''}`}*/}
+                        {/*/>*/}
+                        <div className="remark-section">
+                          <Typography.Text strong>当前阶段草稿</Typography.Text>
+                          <Typography.Paragraph className="muted-paragraph">
+                            {currentStageDraft.fileName} · {`${currentStageDraft.size < 1024 ? `${currentStageDraft.size} B` : currentStageDraft.size < 1024 * 1024 ? `${(currentStageDraft.size / 1024).toFixed(1)} KB` : `${(currentStageDraft.size / (1024 * 1024)).toFixed(1)} MB`}`}
+                          </Typography.Paragraph>
+                        </div>
+                        {session ? (
+                          <Space wrap>
+                            {(() => {
+                              const previewEndpoint = currentStageDraft.previewEndpoint
+
+                              return currentStageDraft.canPreview && previewEndpoint ? (
+                                <Button
+                                  size="small"
+                                  onClick={() => {
+                                    setPreviewTarget({
+                                      endpoint: previewEndpoint,
+                                      label: `${task.currentStage.label}草稿预览`,
+                                    })
+                                  }}
+                                >
+                                  预览草稿
+                                </Button>
+                              ) : null
+                            })()}
                             <Button
                               size="small"
                               onClick={() => {
-                                setPreviewTarget({
-                                  endpoint: previewEndpoint,
-                                  label: `${task.currentStage.label}草稿预览`,
+                                void getTaskStageDraftDownloadLink(
+                                  currentStageDraft.downloadLinkEndpoint,
+                                  session.token,
+                                )
+                                  .then((payload) => {
+                                    copyTextToClipboard(payload.url)
+                                    message.success('草稿下载链接已复制，可直接粘贴到浏览器地址栏下载')
+                                  })
+                                  .catch((error) => {
+                                    message.error(
+                                      error instanceof Error ? error.message : '复制草稿下载链接失败',
+                                    )
+                                  })
+                              }}
+                            >
+                              复制草稿链接
+                            </Button>
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                void downloadTaskStageDraft(
+                                  currentStageDraft.downloadLinkEndpoint,
+                                  session.token,
+                                ).catch((error) => {
+                                  message.error(
+                                    error instanceof Error ? error.message : '草稿下载失败',
+                                  )
                                 })
                               }}
                             >
-                              预览草稿
+                              下载草稿
                             </Button>
-                            ) : null
-                          })()}
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              void getTaskStageDraftDownloadLink(
-                                currentStageDraft.downloadLinkEndpoint,
-                                session.token,
-                              )
-                                .then((payload) => {
-                                  copyTextToClipboard(payload.url)
-                                  message.success('草稿下载链接已复制，可直接粘贴到浏览器地址栏下载')
-                                })
-                                .catch((error) => {
-                                  message.error(
-                                    error instanceof Error ? error.message : '复制草稿下载链接失败',
-                                  )
-                                })
-                            }}
-                          >
-                            复制草稿链接
-                          </Button>
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              void downloadTaskStageDraft(
-                                currentStageDraft.downloadLinkEndpoint,
-                                session.token,
-                              ).catch((error) => {
-                                message.error(
-                                  error instanceof Error ? error.message : '草稿下载失败',
-                                )
-                              })
-                            }}
-                          >
-                            下载草稿
-                          </Button>
-                        </Space>
-                      ) : null}
-                    </Space>
-                  </Card>
+                          </Space>
+                        ) : null}
+                      </Space>
+                    </Card>
+                  )
+                })()
+              ) : null}
+
+              {hasUnsavedDraftChanges ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="当前修改未保存"
+                  description={`请先点“${getSubmitButtonLabel(task)}”，再点“${getConfirmSubmitButtonLabel(task)}”。`}
+                />
+              ) : null}
+
+              {session ? (
+                <FileUploadField
+                  label={renderLabelWithTooltip('阶段结果文件', uploadRule.description)}
+                  token={session.token}
+                  value={uploadedFile}
+                  onChange={setUploadedFile}
+                  acceptedExtensions={uploadRule.acceptedExtensions}
+                  fileTypeHint={uploadRule.fileTypeHint}
+                  uploadPurpose={uploadPurpose}
+                  extraActions={task.currentStage.role === 'cleaner' ? (
+                    <Button
+                      onClick={() => {
+                        // 示例模板由前端直接生成，避免为静态 JSON 额外增加后端下载接口。
+                        downloadTextFile(
+                          CLEANED_TEMPLATE_FILE_NAME,
+                          CLEANED_TEMPLATE_CONTENT,
+                          'application/json',
+                        )
+                      }}
+                      disabled={submitting}
+                    >
+                      下载示例
+                    </Button>
+                  ) : null}
+                />
+              ) : null}
+
+              <div>
+                <Typography.Text strong>阶段备注</Typography.Text>
+                <Input.TextArea
+                  rows={4}
+                  value={remark}
+                  onChange={(event) => {
+                    setRemark(event.target.value)
+                  }}
+                  placeholder="记录本阶段处理说明、问题和交接要点"
+                  style={{ marginTop: 8 }}
+                />
+              </div>
+              <div
+                className="flex"
+                style={{
+                  display: 'flex',
+                  // 两个主操作按钮需要保留固定横向间距，避免“保存”和“提交”贴在一起。
+                  gap: 8,
+                }}
+              >
+                <Button
+                  type="primary"
+                  loading={submitting}
+                  onClick={() => {
+                    if (!session || !taskId) {
+                      return
+                    }
+
+                    if (!uploadedFile) {
+                      message.warning('请先上传阶段结果文件')
+                      return
+                    }
+
+                    setSubmitting(true)
+
+                    void saveTaskStageDraft(
+                      taskId,
+                      {
+                        file: uploadedFile,
+                        remark,
+                      },
+                      session.token,
                     )
-                  })()
-                ) : null}
-
-                {hasUnsavedDraftChanges ? (
-                  <Alert
-                    type="warning"
-                    showIcon
-                    message="当前修改未保存"
-                    description={`请先点“${getSubmitButtonLabel(task)}”，再点“${getConfirmSubmitButtonLabel(task)}”。`}
-                  />
-                ) : null}
-
-                {session ? (
-                  <FileUploadField
-                    label={renderLabelWithTooltip('阶段结果文件', uploadRule.description)}
-                    token={session.token}
-                    value={uploadedFile}
-                    onChange={setUploadedFile}
-                    acceptedExtensions={uploadRule.acceptedExtensions}
-                    fileTypeHint={uploadRule.fileTypeHint}
-                    uploadPurpose={uploadPurpose}
-                    extraActions={task.currentStage.role === 'cleaner' ? (
-                      <Button
-                        onClick={() => {
-                          // 示例模板由前端直接生成，避免为静态 JSON 额外增加后端下载接口。
-                          downloadTextFile(
-                            CLEANED_TEMPLATE_FILE_NAME,
-                            CLEANED_TEMPLATE_CONTENT,
-                            'application/json',
-                          )
-                        }}
-                        disabled={submitting}
-                      >
-                        下载示例
-                      </Button>
-                    ) : null}
-                  />
-                ) : null}
-
-                <div>
-                  <Typography.Text strong>阶段备注</Typography.Text>
-                  <Input.TextArea
-                    rows={4}
-                    value={remark}
-                    onChange={(event) => {
-                      setRemark(event.target.value)
-                    }}
-                    placeholder="记录本阶段处理说明、问题和交接要点"
-                    style={{ marginTop: 8 }}
-                  />
-                </div>
-                <div className="flex">
-                  <Button
-                    type="primary"
-                    loading={submitting}
-                    onClick={() => {
-                      if (!session || !taskId) {
-                        return
-                      }
-
-                      if (!uploadedFile) {
-                        message.warning('请先上传阶段结果文件')
-                        return
-                      }
-
-                      setSubmitting(true)
-
-                      void saveTaskStageDraft(
-                        taskId,
-                        {
-                          file: uploadedFile,
-                          remark,
-                        },
-                        session.token,
-                      )
-                        .then((detail) => {
-                          startTransition(() => {
-                            setTask(detail)
-                          })
-                          setRemark(detail?.currentStageDraft?.remark ?? '')
-                          setUploadedFile(mapDraftToUploadedFile(detail?.currentStageDraft ?? null))
-                          message.success('已存草稿')
-                          onTaskChanged()
+                      .then((detail) => {
+                        startTransition(() => {
+                          setTask(detail)
                         })
-                        .catch((error) => {
-                          message.error(
-                            error instanceof Error ? error.message : '保存阶段草稿失败',
-                          )
-                        })
-                        .finally(() => {
-                          setSubmitting(false)
-                        })
-                    }}
-                  >
-                    {task.canResubmitCurrentStage ? `重新${getSubmitButtonLabel(task)}` : getSubmitButtonLabel(task)}
-                  </Button>
-                  <Button
-                    loading={submitting}
-                    disabled={!task.hasCurrentStageDraft || hasUnsavedDraftChanges}
-                    onClick={() => {
-                      if (!session || !taskId) {
-                        return
-                      }
+                        setRemark(detail?.currentStageDraft?.remark ?? '')
+                        setUploadedFile(mapDraftToUploadedFile(detail?.currentStageDraft ?? null))
+                        message.success('已存草稿')
+                        onTaskChanged()
+                      })
+                      .catch((error) => {
+                        message.error(
+                          error instanceof Error ? error.message : '保存阶段草稿失败',
+                        )
+                      })
+                      .finally(() => {
+                        setSubmitting(false)
+                      })
+                  }}
+                >
+                  {task.canResubmitCurrentStage ? `重新${getSubmitButtonLabel(task)}` : getSubmitButtonLabel(task)}
+                </Button>
+                <Button
+                  loading={submitting}
+                  disabled={!task.hasCurrentStageDraft || hasUnsavedDraftChanges}
+                  onClick={() => {
+                    if (!session || !taskId) {
+                      return
+                    }
 
-                      if (!task.hasCurrentStageDraft) {
-                        message.warning(`请先点击“${getSubmitButtonLabel(task)}”保存草稿`)
-                        return
-                      }
+                    if (!task.hasCurrentStageDraft) {
+                      message.warning(`请先点击“${getSubmitButtonLabel(task)}”保存草稿`)
+                      return
+                    }
 
-                      if (hasUnsavedDraftChanges) {
-                        message.warning(`当前修改未保存，请先点击“${getSubmitButtonLabel(task)}”`)
-                        return
-                      }
+                    if (hasUnsavedDraftChanges) {
+                      message.warning(`当前修改未保存，请先点击“${getSubmitButtonLabel(task)}”`)
+                      return
+                    }
 
-                      setSubmitting(true)
+                    setSubmitting(true)
 
-                      void completeTaskStage(taskId, session.token)
-                        .then((detail) => {
-                          startTransition(() => {
-                            setTask(detail)
-                          })
-                          setRemark(detail?.currentStageDraft?.remark ?? '')
-                          setUploadedFile(mapDraftToUploadedFile(detail?.currentStageDraft ?? null))
-                          message.success(
-                            task.currentStageNeedsReview ? '已提交，待复核' : '已提交',
-                          )
-                          onTaskChanged()
+                    void completeTaskStage(taskId, session.token)
+                      .then((detail) => {
+                        startTransition(() => {
+                          setTask(detail)
                         })
-                        .catch((error) => {
-                          message.error(
-                            error instanceof Error ? error.message : '确认提交阶段失败',
-                          )
-                        })
-                        .finally(() => {
-                          setSubmitting(false)
-                        })
-                    }}
-                  >
-                    {getConfirmSubmitButtonLabel(task)}
-                  </Button>
-                </div>
+                        setRemark(detail?.currentStageDraft?.remark ?? '')
+                        setUploadedFile(mapDraftToUploadedFile(detail?.currentStageDraft ?? null))
+                        message.success(
+                          task.currentStageNeedsReview ? '已提交，待复核' : '已提交',
+                        )
+                        onTaskChanged()
+                      })
+                      .catch((error) => {
+                        message.error(
+                          error instanceof Error ? error.message : '确认提交阶段失败',
+                        )
+                      })
+                      .finally(() => {
+                        setSubmitting(false)
+                      })
+                  }}
+                >
+                  {getConfirmSubmitButtonLabel(task)}
+                </Button>
+              </div>
 
-              </Space>
-            </Card>
+            </Space>
+
           ) : null}
 
           {task.canReviewCurrentStage && task.reviewStage ? (

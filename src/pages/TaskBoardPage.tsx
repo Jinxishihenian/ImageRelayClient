@@ -378,6 +378,7 @@ function TaskBoardPage() {
       title: '任务',
       dataIndex: 'title',
       key: 'title',
+      width: 280,
       render: (_value, record) => (
         <div className="data-cell-title">
           <Typography.Text strong>{record.title}</Typography.Text>
@@ -402,6 +403,7 @@ function TaskBoardPage() {
       title: '状态',
       dataIndex: 'statusLabel',
       key: 'status',
+      width: 160,
       filters: taskStatusFilterOptions,
       filterMultiple: false,
       filteredValue: selectedStatus ? [selectedStatus] : null,
@@ -486,11 +488,14 @@ function TaskBoardPage() {
       title: '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 180,
       render: (value: string) => formatDate(value),
     },
     {
       title: '操作',
       key: 'actions',
+      width: session?.user.role === 'admin' ? 260 : 140,
+      fixed: 'right',
       render: (_value, record) => (
         <Space size="small">
           <Button
@@ -646,7 +651,11 @@ function TaskBoardPage() {
             loading={loading}
             columns={columns}
             dataSource={tasks}
-            scroll={scrollY ? { y: scrollY } : undefined}
+            // fixed 列依赖横向滚动配置；这里保留纵向自适应滚动，避免操作列固定后失效。
+            scroll={{
+              x: 1680,
+              ...(scrollY ? { y: scrollY } : {}),
+            }}
             pagination={{
               current: currentPage,
               pageSize: PAGE_SIZE,
