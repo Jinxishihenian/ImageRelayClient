@@ -109,9 +109,9 @@ function MainLayout() {
         <div className="brand-block">
           <span className="brand-mark">IR</span>
           <div className="brand-copy">
-            <Typography.Text className="section-eyebrow">
-              Image Relay
-            </Typography.Text>
+            {/*<Typography.Text className="section-eyebrow">*/}
+            {/*  Image Relay*/}
+            {/*</Typography.Text>*/}
             <h2>
               任务流转台
             </h2>

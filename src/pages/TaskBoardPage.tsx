@@ -588,9 +588,9 @@ function TaskBoardPage() {
     <div className="page-stack page-fill page-table-layout">
       <section className="page-header page-header-surface">
         <div className="page-header-copy">
-          <Typography.Text className="section-eyebrow">
-            Task Workspace
-          </Typography.Text>
+          {/*<Typography.Text className="section-eyebrow">*/}
+          {/*  Task Workspace*/}
+          {/*</Typography.Text>*/}
           <Typography.Title level={2} className="page-title">
             任务工作台
           </Typography.Title>

@@ -218,9 +218,9 @@ function ModelListPage() {
     <div className="page-stack page-fill page-table-layout">
       <section className="page-header page-header-surface">
         <div className="page-header-copy">
-          <Typography.Text className="section-eyebrow">
-            Model Results
-          </Typography.Text>
+          {/*<Typography.Text className="section-eyebrow">*/}
+          {/*  Model Results*/}
+          {/*</Typography.Text>*/}
           <Typography.Title level={2} className="page-title">
             模型列表
           </Typography.Title>

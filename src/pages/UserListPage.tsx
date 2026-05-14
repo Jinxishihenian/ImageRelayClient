@@ -270,9 +270,9 @@ function UserListPage() {
     <div className="page-stack page-fill page-table-layout">
       <section className="page-header page-header-surface">
         <div className="page-header-copy">
-          <Typography.Text className="section-eyebrow">
-            User Management
-          </Typography.Text>
+          {/*<Typography.Text className="section-eyebrow">*/}
+          {/*  User Management*/}
+          {/*</Typography.Text>*/}
           <Typography.Title level={2} className="page-title">
             用户管理
           </Typography.Title>
