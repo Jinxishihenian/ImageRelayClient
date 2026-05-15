@@ -1,4 +1,4 @@
-import { Button, Card, Descriptions, Drawer, Space, Table, Tabs, Tag, Typography, message } from 'antd'
+import { Button, Card, Descriptions, Modal, Space, Table, Tabs, Tag, Typography, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import {
@@ -276,6 +276,8 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
       render: (_value, record) => (
         <Button
           onClick={() => {
+            // 先清空上一次详情，避免在同一弹层内切换不同数据集时短暂闪出旧内容。
+            setDatasetDetail(null)
             setSelectedDatasetId(record.id)
             setDatasetDetailOpen(true)
           }}
@@ -535,17 +537,24 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
         </Card>
       </div>
 
-      <Drawer
+      <Modal
         open={datasetDetailOpen}
-        width={820}
+        width={980}
         title={datasetDetail?.name ?? '项目数据集详情'}
-        onClose={() => {
+        footer={null}
+        destroyOnHidden
+        onCancel={() => {
           setDatasetDetailOpen(false)
           setSelectedDatasetId(null)
           setDatasetDetail(null)
         }}
-        destroyOnClose
-        loading={datasetDetailLoading}
+        styles={{
+          body: {
+            // 版本表格可能较长，限制弹窗内容区高度，只让弹窗内部滚动。
+            maxHeight: 'calc(100vh - 220px)',
+            overflowY: 'auto',
+          },
+        }}
       >
         {datasetDetail ? (
           <div className="detail-stack">
@@ -579,13 +588,16 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
                 rowKey="id"
                 columns={datasetVersionColumns}
                 dataSource={datasetDetail.versions}
+                loading={datasetDetailLoading}
                 pagination={false}
                 locale={{ emptyText: '当前数据集暂无版本' }}
               />
             </Card>
           </div>
+        ) : datasetDetailLoading ? (
+          <Card className="panel-card" loading />
         ) : null}
-      </Drawer>
+      </Modal>
     </>
   )
 }
