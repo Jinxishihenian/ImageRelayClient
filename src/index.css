@@ -658,6 +658,11 @@ h6 {
   background: rgba(255, 255, 255, 0.92);
 }
 
+.archive-preview-image-error {
+  border: 1px dashed var(--color-border-light);
+  color: var(--color-text-secondary);
+}
+
 .archive-preview-meta {
   display: grid;
   gap: 4px;
