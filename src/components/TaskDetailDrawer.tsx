@@ -124,7 +124,7 @@ function getStageUploadRule(role: UserRole | null) {
       acceptedExtensions: ARCHIVE_EXTENSIONS,
       fileTypeHint: ARCHIVE_FILE_HINT,
       description:
-        '文件会先上传到临时区，点击完成后再正式挂到任务记录。标注阶段当前仅支持压缩包格式。',
+        '文件会先上传到临时区，点击完成后再正式挂到任务记录。标注阶段当前仅支持 zip / rar / 7z 压缩包，且 zip 包内只允许 .txt 文件；提交后仅支持下载，不提供预览。',
     }
   }
 

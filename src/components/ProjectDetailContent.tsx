@@ -371,7 +371,7 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
   return (
     <>
       <div className="detail-stack">
-        <Card className="panel-card" loading={loading}>
+        <Card title="基础信息" className="panel-card" loading={loading}>
           {detail ? (
             <Descriptions bordered size="small" column={2}>
               <Descriptions.Item label="项目状态">
@@ -407,7 +407,7 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
           ) : null}
         </Card>
 
-        <Card className="panel-card page-table-card">
+        <Card title="项目明细" className="panel-card page-table-card">
           <Tabs
             defaultActiveKey="overview"
             items={[
