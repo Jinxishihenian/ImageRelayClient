@@ -161,6 +161,10 @@ function getTaskStatusTagStyle(canHandle: boolean) {
     }
 }
 
+function getTaskStatusTagClassName(canHandle: boolean) {
+  return canHandle ? 'status-tag status-tag-info' : 'status-tag status-tag-neutral'
+}
+
 function getSubmitCardDescription(task: TaskDetail) {
   if (task.currentStage.role === 'cleaner') {
     const baseDescription = '上传 JSON 清单后，后端会按清单从初始 zip 中直接引用对应图片，动态生成清洗结果，不会重新上传重复图片。点击“保存清洗”仅保存草稿，不会立即流转。'
@@ -341,7 +345,7 @@ function TaskDetailDrawer({
                   return (
                     <Tag
                       bordered={false}
-                      className="status-tag"
+                      className={getTaskStatusTagClassName(task.canHandle)}
                       color={tagStyle.background}
                       style={{ color: tagStyle.color }}
                     >

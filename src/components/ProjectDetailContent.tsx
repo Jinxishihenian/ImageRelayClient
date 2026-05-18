@@ -65,6 +65,27 @@ function getStageTagColor(stage: DatasetVersionSummary['stage']) {
   }
 }
 
+function getProjectStatusTagColor(status: ModelIterationDetail['status']) {
+  return status === 'active'
+    ? { background: '#E6F4FF', color: '#1677FF' }
+    : { background: '#FAFAFA', color: '#4E5969' }
+}
+
+function getProjectStatusTagClassName(status: ModelIterationDetail['status']) {
+  return status === 'active' ? 'status-tag status-tag-info' : 'status-tag status-tag-neutral'
+}
+
+function getDatasetStageTagClassName(stage: DatasetVersionSummary['stage']) {
+  switch (stage) {
+    case 'raw':
+      return 'status-tag status-tag-warning'
+    case 'cleaned':
+      return 'status-tag status-tag-info'
+    case 'annotated':
+      return 'status-tag status-tag-success'
+  }
+}
+
 function ProjectDetailContent({ detail, loading, token, onDetailChange }: ProjectDetailContentProps) {
   const { containerRef: taskTableRef, scrollY: taskScrollY } = useTableScrollY()
   const { containerRef: resultTableRef, scrollY: resultScrollY } = useTableScrollY()
@@ -303,7 +324,12 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
         const tagColor = getStageTagColor(record.stage)
 
         return (
-          <Tag bordered={false} color={tagColor.background} style={{ color: tagColor.color }}>
+          <Tag
+            bordered={false}
+            className={getDatasetStageTagClassName(record.stage)}
+            color={tagColor.background}
+            style={{ color: tagColor.color }}
+          >
             {record.stageLabel}
           </Tag>
         )
@@ -375,14 +401,20 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
           {detail ? (
             <Descriptions bordered size="small" column={2}>
               <Descriptions.Item label="项目状态">
-                <Tag
-                  bordered={false}
-                  className="status-tag"
-                  color={detail.status === 'active' ? '#E6F4FF' : '#FAFAFA'}
-                  style={{ color: detail.status === 'active' ? '#1677FF' : '#4E5969' }}
-                >
-                  {detail.statusLabel}
-                </Tag>
+                {(() => {
+                  const tagColor = getProjectStatusTagColor(detail.status)
+
+                  return (
+                    <Tag
+                      bordered={false}
+                      className={getProjectStatusTagClassName(detail.status)}
+                      color={tagColor.background}
+                      style={{ color: tagColor.color }}
+                    >
+                      {detail.statusLabel}
+                    </Tag>
+                  )
+                })()}
               </Descriptions.Item>
               <Descriptions.Item label="创建人">{detail.creator.username}</Descriptions.Item>
               <Descriptions.Item label="基线模型">{detail.baseModelName}</Descriptions.Item>
@@ -417,14 +449,21 @@ function ProjectDetailContent({ detail, loading, token, onDetailChange }: Projec
                 children: (
                   <Descriptions bordered size="small" column={2}>
                     <Descriptions.Item label="项目状态">
-                      <Tag
-                        bordered={false}
-                        className="status-tag"
-                        color={detail?.status === 'active' ? '#E6F4FF' : '#FAFAFA'}
-                        style={{ color: detail?.status === 'active' ? '#1677FF' : '#4E5969' }}
-                      >
-                        {detail?.statusLabel || '暂无'}
-                      </Tag>
+                      {(() => {
+                        const status = detail?.status ?? 'archived'
+                        const tagColor = getProjectStatusTagColor(status)
+
+                        return (
+                          <Tag
+                            bordered={false}
+                            className={getProjectStatusTagClassName(status)}
+                            color={tagColor.background}
+                            style={{ color: tagColor.color }}
+                          >
+                            {detail?.statusLabel || '暂无'}
+                          </Tag>
+                        )
+                      })()}
                     </Descriptions.Item>
                     <Descriptions.Item label="项目数据集数量">
                       {detail?.datasets.length ?? 0}

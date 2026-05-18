@@ -15,7 +15,8 @@ createRoot(document.getElementById('root')!).render(
         token: {
           colorPrimary: '#1677FF',
           colorInfo: '#1677FF',
-          colorSuccess: '#1677FF',
+          // 成功态不再复用主蓝，避免“完成/通过”和“主操作/高亮”语义混淆。
+          colorSuccess: '#52C41A',
           colorWarning: '#FAAD14',
           colorError: '#F53F3F',
           colorText: '#1F2329',

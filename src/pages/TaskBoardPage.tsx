@@ -30,6 +30,31 @@ function formatDate(value: string) {
   })
 }
 
+function getTaskSortPriority(record: TaskSummary) {
+  // Keep pending items ahead of finished items, but do not change the time order within a group.
+  return record.status === 'finished' && record.reviewStatus !== 'pending_admin_review' ? 1 : 0
+}
+
+function sortTaskSummaries(items: TaskSummary[]) {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const priorityDiff = getTaskSortPriority(left.item) - getTaskSortPriority(right.item)
+      if (priorityDiff !== 0) {
+        return priorityDiff
+      }
+
+      const timeDiff = Date.parse(right.item.createdAt) - Date.parse(left.item.createdAt)
+      if (timeDiff !== 0) {
+        return timeDiff
+      }
+
+      // Fallback to the API order when timestamps are identical.
+      return left.index - right.index
+    })
+    .map(({ item }) => item)
+}
+
 // 按任务阶段固定配色，避免把“当前是否可处理”和“任务所处状态”混在一起。
 const taskStatusTagStyleMap: Record<TaskStatus, { background: string; color: string }> = {
   pending_clean: {
@@ -182,7 +207,7 @@ function TaskBoardPage() {
         hasLoadedSummaryRef.current = true
 
         startTransition(() => {
-          setTasks(response.items)
+          setTasks(sortTaskSummaries(response.items))
           setSummary(response.summary)
           setCurrentPage(response.pagination.page)
         })
