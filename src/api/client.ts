@@ -685,3 +685,38 @@ export async function getProtectedBlob(
 
   return response.blob()
 }
+
+export async function getProtectedText(
+  endpoint: string,
+  token: string,
+): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const payload = await parseJsonSafely<ApiErrorPayload>(response)
+    throw new ApiError(
+      payload?.error?.message || `请求失败，状态码 ${response.status}`,
+      response.status,
+    )
+  }
+
+  return response.text()
+}
+
+export async function getTaskFileJsonContent(
+  endpoint: string,
+  token: string,
+): Promise<string> {
+  const content = await getProtectedText(endpoint, token)
+
+  try {
+    // 这里先做一次 JSON.parse，再统一格式化输出，避免把非法内容直接塞进弹窗。
+    return JSON.stringify(JSON.parse(content), null, 2)
+  } catch {
+    throw new ApiError('文件内容不是合法 JSON，无法打开预览。', 400)
+  }
+}

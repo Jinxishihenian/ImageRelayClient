@@ -21,6 +21,7 @@ import {
   downloadTaskFile,
   downloadTaskStageDraft,
   getTaskDetail,
+  getTaskFileJsonContent,
   getTaskFileDownloadLink,
   getTaskStageDraftDownloadLink,
   reviewTaskStage,
@@ -47,26 +48,15 @@ const ARCHIVE_EXTENSIONS = ['.zip', '.rar', '.7z']
 const ARCHIVE_FILE_HINT = 'zip / rar / 7z 压缩包'
 const JSON_EXTENSIONS = ['.json']
 const JSON_FILE_HINT = 'json 清单文件'
-const CLEANED_TEMPLATE_FILE_NAME = '清洗结果示例模板.json'
 const CLEANED_TEMPLATE_CONTENT = JSON.stringify(
   ['a.png', 'b.png'],
   null,
   2,
 )
+const JSON_MODAL_BODY_MAX_HEIGHT = 'calc(100vh - 280px)'
 
-function downloadTextFile(fileName: string, content: string, mimeType: string) {
-  const blob = new Blob([content], {
-    type: `${mimeType};charset=utf-8`,
-  })
-  const downloadUrl = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-
-  anchor.href = downloadUrl
-  anchor.download = fileName
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
-  URL.revokeObjectURL(downloadUrl)
+function isJsonFileName(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith('.json')
 }
 
 function mapDraftToUploadedFile(draft: TaskDetail['currentStageDraft']): UploadedFileRef | null {
@@ -258,14 +248,57 @@ function TaskDetailDrawer({
     endpoint: string
     label: string
   } | null>(null)
+  const [jsonPreviewTarget, setJsonPreviewTarget] = useState<{
+    endpoint: string
+    label: string
+    fileName: string
+  } | null>(null)
+  const [jsonPreviewLoading, setJsonPreviewLoading] = useState(false)
+  const [jsonPreviewContent, setJsonPreviewContent] = useState('')
+  const [jsonPreviewError, setJsonPreviewError] = useState<string | null>(null)
+  const [exampleJsonModalOpen, setExampleJsonModalOpen] = useState(false)
   const [reviewCommentDraft, setReviewCommentDraft] = useState('')
   const [, startTransition] = useTransition()
+  const jsonPreviewRequestIdRef = useRef(0)
   const uploadRule = getStageUploadRule(task?.currentStage.role ?? null)
   const uploadPurpose = getStageUploadPurpose(task?.currentStage.role ?? null)
   const currentStageDraft = task?.currentStageDraft ?? null
   const hasUnsavedDraftChanges = currentStageDraft
     ? uploadedFile?.storageKey !== currentStageDraft.storageKey || remark !== (currentStageDraft.remark ?? '')
     : Boolean(uploadedFile) || remark.trim().length > 0
+
+  useEffect(() => {
+    if (!jsonPreviewTarget || !session) {
+      return
+    }
+
+    const requestId = jsonPreviewRequestIdRef.current + 1
+    jsonPreviewRequestIdRef.current = requestId
+    setJsonPreviewLoading(true)
+    setJsonPreviewContent('')
+    setJsonPreviewError(null)
+
+    void getTaskFileJsonContent(jsonPreviewTarget.endpoint, session.token)
+      .then((content) => {
+        if (jsonPreviewRequestIdRef.current !== requestId) {
+          return
+        }
+
+        setJsonPreviewContent(content)
+      })
+      .catch((error) => {
+        if (jsonPreviewRequestIdRef.current !== requestId) {
+          return
+        }
+
+        setJsonPreviewError(error instanceof Error ? error.message : 'JSON 内容加载失败')
+      })
+      .finally(() => {
+        if (jsonPreviewRequestIdRef.current === requestId) {
+          setJsonPreviewLoading(false)
+        }
+      })
+  }, [jsonPreviewTarget, session])
 
   useEffect(() => {
     if (!open || !taskId || !session) {
@@ -319,6 +352,12 @@ function TaskDetailDrawer({
         setRemark('')
         setUploadedFile(null)
         setPreviewTarget(null)
+        jsonPreviewRequestIdRef.current += 1
+        setJsonPreviewTarget(null)
+        setJsonPreviewLoading(false)
+        setJsonPreviewContent('')
+        setJsonPreviewError(null)
+        setExampleJsonModalOpen(false)
         setReviewCommentDraft('')
         setLoading(false)
         onClose()
@@ -438,82 +477,100 @@ function TaskDetailDrawer({
             ) : (
               <List
                 dataSource={task.downloads}
-                renderItem={(item) => (
-                  <List.Item
-                    actions={[
-                      item.canPreview && item.previewEndpoint ? (
+                renderItem={(item) => {
+                  const isJsonDownload = isJsonFileName(item.fileName)
+
+                  return (
+                    <List.Item
+                      actions={isJsonDownload ? [
                         <Button
-                          key="preview"
+                          key="view-json"
                           size="small"
                           onClick={() => {
-                            setPreviewTarget({
-                              endpoint: item.previewEndpoint!,
+                            setJsonPreviewTarget({
+                              endpoint: item.endpoint,
                               label: item.label,
+                              fileName: item.fileName,
                             })
                           }}
                         >
-                          预览
-                        </Button>
-                      ) : null,
-                      <Button
-                        key="copy-link"
-                        size="small"
-                        onClick={() => {
-                          if (!session) {
-                            return
-                          }
+                          查看 JSON
+                        </Button>,
+                      ] : [
+                        item.canPreview && item.previewEndpoint ? (
+                          <Button
+                            key="preview"
+                            size="small"
+                            onClick={() => {
+                              setPreviewTarget({
+                                endpoint: item.previewEndpoint!,
+                                label: item.label,
+                              })
+                            }}
+                          >
+                            预览
+                          </Button>
+                        ) : null,
+                        <Button
+                          key="copy-link"
+                          size="small"
+                          onClick={() => {
+                            if (!session) {
+                              return
+                            }
 
-                          // 复制的是临时签名下载链接，避免把需要 Authorization 头的接口地址
-                          // 直接暴露给用户后却无法在浏览器地址栏中使用。
-                          void getTaskFileDownloadLink(
-                            `${item.endpoint}-link`,
-                            session.token,
-                          )
-                            .then((payload) => {
-                              copyTextToClipboard(payload.url)
-                              message.success(
-                                '下载链接已复制，可直接粘贴到浏览器地址栏下载',
-                              )
-                            })
-                            .catch((error) => {
-                              message.error(
-                                error instanceof Error
-                                  ? error.message
-                                  : '复制下载链接失败',
-                              )
-                            })
-                        }}
-                      >
-                        复制链接
-                      </Button>,
-                      <Button
-                        key="download"
-                        size="small"
-                        onClick={() => {
-                          if (!session) {
-                            return
-                          }
-
-                          void downloadTaskFile(
-                            item.endpoint,
-                            session.token,
-                          ).catch((error) => {
-                            message.error(
-                              error instanceof Error ? error.message : '文件下载失败',
+                            // 复制的是临时签名下载链接，避免把需要 Authorization 头的接口地址
+                            // 直接暴露给用户后却无法在浏览器地址栏中使用。
+                            void getTaskFileDownloadLink(
+                              `${item.endpoint}-link`,
+                              session.token,
                             )
-                          })
-                        }}
-                      >
-                        下载
-                      </Button>,
-                    ].filter(Boolean)}
-                  >
-                    <List.Item.Meta
-                      title={item.label}
-                      description={item.fileName}
-                    />
-                  </List.Item>
-                )}
+                              .then((payload) => {
+                                copyTextToClipboard(payload.url)
+                                message.success(
+                                  '下载链接已复制，可直接粘贴到浏览器地址栏下载',
+                                )
+                              })
+                              .catch((error) => {
+                                message.error(
+                                  error instanceof Error
+                                    ? error.message
+                                    : '复制下载链接失败',
+                                )
+                              })
+                          }}
+                        >
+                          复制链接
+                        </Button>,
+                        <Button
+                          key="download"
+                          size="small"
+                          onClick={() => {
+                            if (!session) {
+                              return
+                            }
+
+                            void downloadTaskFile(
+                              item.endpoint,
+                              session.token,
+                            ).catch((error) => {
+                              message.error(
+                                error instanceof Error ? error.message : '文件下载失败',
+                              )
+                            })
+                          }}
+                        >
+                          下载
+                        </Button>,
+                      ].filter(Boolean)}
+                    >
+                      <List.Item.Meta
+                        title={item.label}
+                        description={item.fileName}
+                      />
+                    </List.Item>
+                  )
+                }}
               />
             )}
           </Card>
@@ -669,16 +726,11 @@ function TaskDetailDrawer({
                   extraActions={task.currentStage.role === 'cleaner' ? (
                     <Button
                       onClick={() => {
-                        // 示例模板由前端直接生成，避免为静态 JSON 额外增加后端下载接口。
-                        downloadTextFile(
-                          CLEANED_TEMPLATE_FILE_NAME,
-                          CLEANED_TEMPLATE_CONTENT,
-                          'application/json',
-                        )
+                        setExampleJsonModalOpen(true)
                       }}
                       disabled={submitting}
                     >
-                      下载示例
+                      查看示例
                     </Button>
                   ) : null}
                 />
@@ -938,6 +990,128 @@ function TaskDetailDrawer({
           }}
         />
       ) : null}
+
+      <Modal
+        open={Boolean(jsonPreviewTarget)}
+        title={jsonPreviewTarget ? `${jsonPreviewTarget.label} 内容` : 'JSON 内容'}
+        width={860}
+        destroyOnClose
+        onCancel={() => {
+          jsonPreviewRequestIdRef.current += 1
+          setJsonPreviewTarget(null)
+          setJsonPreviewLoading(false)
+          setJsonPreviewContent('')
+          setJsonPreviewError(null)
+        }}
+        footer={[
+          <Button
+            key="copy-json"
+            type="primary"
+            disabled={!jsonPreviewContent || jsonPreviewLoading}
+            onClick={() => {
+              try {
+                copyTextToClipboard(jsonPreviewContent)
+                message.success('JSON 内容已复制')
+              } catch (error) {
+                message.error(
+                  error instanceof Error ? error.message : '复制 JSON 内容失败',
+                )
+              }
+            }}
+          >
+            复制内容
+          </Button>,
+          <Button
+            key="close-json"
+            onClick={() => {
+              jsonPreviewRequestIdRef.current += 1
+              setJsonPreviewTarget(null)
+              setJsonPreviewLoading(false)
+              setJsonPreviewContent('')
+              setJsonPreviewError(null)
+            }}
+          >
+            关闭
+          </Button>,
+        ]}
+      >
+        {jsonPreviewLoading ? (
+          <div className="json-preview-loading">
+            <Typography.Text className="muted-text">JSON 内容加载中...</Typography.Text>
+          </div>
+        ) : jsonPreviewError ? (
+          <Alert
+            type="error"
+            showIcon
+            message="无法打开 JSON 预览"
+            description={jsonPreviewError}
+          />
+        ) : (
+          <div className="json-preview-stack">
+            <Typography.Text className="muted-text">
+              {jsonPreviewTarget?.fileName}
+            </Typography.Text>
+            <pre
+              className="json-preview-content"
+              style={{
+                maxHeight: JSON_MODAL_BODY_MAX_HEIGHT,
+              }}
+            >
+              {jsonPreviewContent}
+            </pre>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={exampleJsonModalOpen}
+        title="清洗结果示例"
+        width={860}
+        destroyOnClose
+        onCancel={() => {
+          setExampleJsonModalOpen(false)
+        }}
+        footer={[
+          <Button
+            key="copy-example-json"
+            type="primary"
+            onClick={() => {
+              try {
+                copyTextToClipboard(CLEANED_TEMPLATE_CONTENT)
+                message.success('示例 JSON 已复制')
+              } catch (error) {
+                message.error(
+                  error instanceof Error ? error.message : '复制示例 JSON 失败',
+                )
+              }
+            }}
+          >
+            复制内容
+          </Button>,
+          <Button
+            key="close-example-json"
+            onClick={() => {
+              setExampleJsonModalOpen(false)
+            }}
+          >
+            关闭
+          </Button>,
+        ]}
+      >
+        <div className="json-preview-stack">
+          <Typography.Text className="muted-text">
+            清洗阶段请上传 JSON 字符串数组，内容为保留图片文件名列表。
+          </Typography.Text>
+          <pre
+            className="json-preview-content"
+            style={{
+              maxHeight: JSON_MODAL_BODY_MAX_HEIGHT,
+            }}
+          >
+            {CLEANED_TEMPLATE_CONTENT}
+          </pre>
+        </div>
+      </Modal>
     </Drawer>
   )
 }

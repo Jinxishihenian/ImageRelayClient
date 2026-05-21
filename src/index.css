@@ -777,6 +777,32 @@ h6 {
   justify-content: center;
 }
 
+.json-preview-loading {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+}
+
+.json-preview-stack {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.json-preview-content {
+  margin: 0;
+  padding: var(--spacing-md);
+  overflow: auto;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-large);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.6;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .login-screen {
   min-height: 100svh;
   display: grid;

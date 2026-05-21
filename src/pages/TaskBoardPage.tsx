@@ -31,8 +31,12 @@ function formatDate(value: string) {
 }
 
 function getTaskSortPriority(record: TaskSummary) {
-  // Keep pending items ahead of finished items, but do not change the time order within a group.
-  return record.status === 'finished' && record.reviewStatus !== 'pending_admin_review' ? 1 : 0
+  // 保持和后端一致：当前用户可直接处理/可审核/可重提的任务排在前面，避免分页后前后端顺序不一致。
+  if (record.canHandle || record.canReview || record.canResubmit) {
+    return 0
+  }
+
+  return 1
 }
 
 function sortTaskSummaries(items: TaskSummary[]) {
