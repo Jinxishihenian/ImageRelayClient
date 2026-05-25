@@ -28,9 +28,9 @@ function LoginPage() {
             <Typography.Title level={3}>登录系统</Typography.Title>
           </div>
 
-          <div className="login-card-tip">
-            默认密码为 `123456`。例如可使用 `admin01`、`cleaner01`、`annotator01`、`trainer01` 登录。
-          </div>
+          {/*<div className="login-card-tip">*/}
+          {/*  默认密码为 `123456`。例如可使用 `admin01`、`cleaner01`、`annotator01`、`trainer01` 登录。*/}
+          {/*</div>*/}
 
           <Form<LoginFormValues>
             layout="vertical"
